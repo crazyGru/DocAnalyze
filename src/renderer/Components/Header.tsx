@@ -1,14 +1,15 @@
 import styles from './Header.module.css';
 import { FaBars } from 'react-icons/fa';
-import { useState } from 'react';
+import { useState, useContext  } from 'react';
+import { AppContext } from '../App';
 
 function Header() {
-  const [showMenu, setShowMenu] = useState(false);
+  const app = useContext(AppContext);
   const handleClick = () => {
-    setShowMenu(!showMenu);
+    app?.updateApp(!app.showMenu);
   };
 
-  const bgColor = showMenu ? '' : 'bg-[#1E233F]';
+  const bgColor = app?.showMenu ? 'bg-[#1E233F]' : '';
 
   return (
     <div
