@@ -5,18 +5,25 @@ import './App.css';
 import ReviewPage from './Pages/ReviewPage';
 import Header from './Components/Header';
 import Menu from './Components/Menu';
+import GeneratePage from './Pages/GeneratePage';
 
 interface AppContextType {
   showMenu: boolean;
-  updateApp: (showMenu: boolean) => void;
+  currentPage : string;
+  updateApp: (showMenu: boolean, currentPage:string) => void;
 }
 
 export const AppContext = createContext<AppContextType | null>(null);
 
 export default function App() {
-  const [app, setApp] = useState({ showMenu: true });
-  const updateApp = (showMenu: boolean) => {
-    setApp({ showMenu });
+  const pageTitles = [
+    "Review Translation",
+    "Generate Translation",
+    "Update Translation"
+  ]
+  const [app, setApp] = useState({ showMenu: true, currentPage: pageTitles[0]});
+  const updateApp = (showMenu: boolean, currentPage : string) => {
+    setApp({ showMenu, currentPage });
   };
 
   return (
@@ -24,12 +31,9 @@ export default function App() {
       <div className="bg-[#131420] w-screen h-screen">
         <Header></Header>
         <div className="flex p-1" style={{ height: 'calc(100% - 72px)' }}>
-          {app.showMenu&&(<Menu></Menu>)}
-          <Router>
-            <Routes>
-              <Route path="/" element={<ReviewPage />} />
-            </Routes>
-          </Router>
+          <Menu></Menu>
+          <ReviewPage></ReviewPage>
+          <GeneratePage></GeneratePage>
         </div>
       </div>
     </AppContext.Provider>

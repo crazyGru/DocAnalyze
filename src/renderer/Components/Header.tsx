@@ -6,7 +6,7 @@ import { AppContext } from '../App';
 function Header() {
   const app = useContext(AppContext);
   const handleClick = () => {
-    app?.updateApp(!app.showMenu);
+    app?.updateApp(!app.showMenu, app.currentPage);
   };
 
   const bgColor = app?.showMenu ? 'bg-[#1E233F]' : '';

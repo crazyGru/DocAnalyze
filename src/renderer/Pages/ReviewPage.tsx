@@ -1,6 +1,7 @@
-import React, { FunctionComponent, useEffect, useRef, useState } from 'react';
+import React, { FunctionComponent, useContext, useRef, useState } from 'react';
 import { FaFileUpload } from 'react-icons/fa';
 import { FaCheckCircle } from 'react-icons/fa';
+import { AppContext } from '../App';
 
 interface DocumentTypeSelectorProps {
   options: string[];
@@ -59,6 +60,7 @@ const DocumentUploadComponent: FunctionComponent<
 > = ({ mode }) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isUploaded, setIsUploaded] = useState(false);
+  const [fileName, setFileName] = useState("");
 
   const handleUploadClick = () => {
     fileInputRef.current?.click();
@@ -68,6 +70,7 @@ const DocumentUploadComponent: FunctionComponent<
     const file = event.target.files?.[0];
     if (file) {
       setIsUploaded(true);
+      setFileName(file.name);
     } else {
       setIsUploaded(false);
     }
@@ -76,11 +79,16 @@ const DocumentUploadComponent: FunctionComponent<
   return (
     <div className="w-full h-full border-2 border-dashed border-[#36363C] rounded-md mx-1 bg-[#1B1D2A] flex flex-col justify-center items-center space-y-4">
       {isUploaded ? (
+        <>
         <FaCheckCircle size={70} color="#65CC16" />
+        <div className="text-base">{fileName}</div>
+        </>
       ) : (
+        <>
         <FaFileUpload size={70} color="#525462" />
+        <div className="text-base">Drag a {mode} document data</div>
+        </>
       )}
-      <div className="text-base">Drag a {mode} document data</div>
       <div className="text-xs text-[#9FA6B2]">Or</div>
       <button
         onClick={handleUploadClick}
@@ -168,6 +176,12 @@ const OtherDocComponent : FunctionComponent<DocComponentProps>= ({setReviewState
 };
 
 export default function ReviewPage() {
+  const app = useContext(AppContext);
+  const appName = "Review Translation";
+
+  const isShow = (app?.currentPage===appName)?"":"hidden";
+  const mWidth = app?.showMenu ? "50vw" : "50vw - 256px";
+
   const DocumentTypes = [
     '2 KFS Documents',
     'Single KFS Document',
@@ -178,7 +192,7 @@ export default function ReviewPage() {
   const handleDocTypeChange = (newDocType: string) => { setDocType(newDocType); };
   const handleViewStateChange = (isReview: boolean) => { setDocReview(isReview); };
   return (
-    <div className="p-8 pb-2 w-full h-full">
+    <div className={`${isShow} p-8 pb-2 h-full w-full`}>
       <div className="">
         <svg
           width="294"
@@ -193,7 +207,7 @@ export default function ReviewPage() {
           />
         </svg>
       </div>
-      <div className="w-full border-t border-white-500 mt-5 mb-10" />
+      <div className="w-full border-t border-white-500 mt-5 mb-10"/>
       {docReview ? (
         <>wwww</>
       ) : (

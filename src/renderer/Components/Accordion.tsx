@@ -1,8 +1,9 @@
-import React, { FunctionComponent, useState } from 'react';
+import React, { FunctionComponent, useState, useContext } from 'react';
 import AccordionItem from './AccordionItem';
 import { FaThumbsUp } from 'react-icons/fa';
 import { FaDharmachakra } from 'react-icons/fa';
 import { FaWrench } from 'react-icons/fa';
+import { AppContext } from '../App';
 
 interface AccordionChildrenItemProps {
   children: React.ReactNode,
@@ -12,17 +13,23 @@ interface AccordionChildrenItemProps {
 }
 
 const AccordionChildrenItem: FunctionComponent<AccordionChildrenItemProps> = ({children, title, isSelected, setPageName}) => {
+  const app = useContext(AppContext);
   // Define a base class string
   const baseClass = "font-sans m-1 h-14 rounded-sm cursor-pointer flex text-[#E9E9E9] align-middle";
 
   // Conditionally add the background color class based on isSelected
   const backgroundColorClass = isSelected ? "bg-[#404562]" : "bg-[#262732]";
 
+  const handleClick = () => {
+    setPageName(title);
+    app?.updateApp(app.showMenu, title);
+  };
+
   return (
     <div 
       className={`${baseClass} ${backgroundColorClass}`}
       style={{alignItems:"center", justifyContent:"space-evenly"}} 
-      onClick={() => setPageName(title)}
+      onClick={handleClick}
     >
       {children}
     </div>
