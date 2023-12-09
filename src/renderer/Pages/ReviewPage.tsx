@@ -4,11 +4,12 @@ import { FaCheckCircle } from 'react-icons/fa';
 
 interface DocumentTypeSelectorProps {
   options: string[];
-  changeDocType : (newDocType: string) => void;
+  changeDocType: (newDocType: string) => void;
 }
 
 const DocumentTypeSelector: FunctionComponent<DocumentTypeSelectorProps> = ({
-  options, changeDocType
+  options,
+  changeDocType,
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [selectedOption, setSelectedOption] = useState(options[0] || '');
@@ -53,7 +54,9 @@ interface DocumentUploadComponentProps {
   mode: string;
 }
 
-const DocumentUploadComponent: FunctionComponent<DocumentUploadComponentProps> = ({ mode }) => {
+const DocumentUploadComponent: FunctionComponent<
+  DocumentUploadComponentProps
+> = ({ mode }) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isUploaded, setIsUploaded] = useState(false);
 
@@ -96,7 +99,10 @@ const DocumentUploadComponent: FunctionComponent<DocumentUploadComponentProps> =
     </div>
   );
 };
-const KFS2DocComponent = () => {
+interface DocComponentProps{
+  setReviewState : (isReview : boolean) => void;
+}
+const KFS2DocComponent : FunctionComponent<DocComponentProps> = ({setReviewState}) => {
   return (
     <div className="w-full h-full rounded-2xl bg-[#262732] p-5 text-2xl	space-y-4">
       <div>Upload 1 English document and 1 Chinese document</div>
@@ -112,14 +118,14 @@ const KFS2DocComponent = () => {
         </div>
       </div>
       <div className="w-full h-24 bg-[#1B1D2A] rounded flex justify-end p-5 font-bold">
-        <button className="bg-[#306BF3] border-solid border border-[#252637]">
+        <button className="bg-[#306BF3] border-solid border border-[#252637]" onClick={() => setReviewState(true)}>
           Review
         </button>
       </div>
     </div>
   );
 };
-const KFS1DocComponent = () => {
+const KFS1DocComponent : FunctionComponent<DocComponentProps>= ({setReviewState}) => {
   return (
     <div className="w-full h-full rounded-2xl bg-[#262732] p-5 text-2xl	space-y-4">
       <div>Upload Single KFS document</div>
@@ -130,14 +136,14 @@ const KFS1DocComponent = () => {
         <DocumentUploadComponent mode="Single KFS"></DocumentUploadComponent>
       </div>
       <div className="w-full h-24 bg-[#1B1D2A] rounded flex justify-end p-5 font-bold">
-        <button className="bg-[#306BF3] border-solid border border-[#252637]">
+        <button className="bg-[#306BF3] border-solid border border-[#252637]" onClick={() => setReviewState(true)}>
           Review
         </button>
       </div>
     </div>
   );
 };
-const OtherDocComponent = () => {
+const OtherDocComponent : FunctionComponent<DocComponentProps>= ({setReviewState}) => {
   return (
     <div className="w-full h-full rounded-2xl bg-[#262732] p-5 text-2xl	space-y-4">
       <div>Upload 1 English document and 1 Chinese document</div>
@@ -153,7 +159,7 @@ const OtherDocComponent = () => {
         </div>
       </div>
       <div className="w-full h-24 bg-[#1B1D2A] rounded flex justify-end p-5 font-bold">
-        <button className="bg-[#306BF3] border-solid border border-[#252637]">
+        <button className="bg-[#306BF3] border-solid border border-[#252637]" onClick={() => setReviewState(true)}>
           Review
         </button>
       </div>
@@ -168,9 +174,9 @@ export default function ReviewPage() {
     'Other Document',
   ];
   const [docType, setDocType] = useState<string>(DocumentTypes[0]);
-  const handleDocTypeChange = (newDocType:string) =>{
-    setDocType(newDocType);
-  };
+  const [docReview, setDocReview] = useState<boolean>(false);
+  const handleDocTypeChange = (newDocType: string) => { setDocType(newDocType); };
+  const handleViewStateChange = (isReview: boolean) => { setDocReview(isReview); };
   return (
     <div className="p-8 pb-2 w-full h-full">
       <div className="">
@@ -188,12 +194,30 @@ export default function ReviewPage() {
         </svg>
       </div>
       <div className="w-full border-t border-white-500 mt-5 mb-10" />
-      <DocumentTypeSelector options={DocumentTypes} changeDocType={handleDocTypeChange}></DocumentTypeSelector>
-      <div className="my-10 w-full" style={{ height: 'calc(100% - 150px)' }}>
-        {docType===DocumentTypes[0]&&(<KFS2DocComponent></KFS2DocComponent>)}
-        {docType===DocumentTypes[1]&&(<KFS1DocComponent></KFS1DocComponent>)}
-        {docType===DocumentTypes[2]&&(<OtherDocComponent></OtherDocComponent>)}
-      </div>
+      {docReview ? (
+        <>wwww</>
+      ) : (
+        <>
+          <DocumentTypeSelector
+            options={DocumentTypes}
+            changeDocType={handleDocTypeChange}
+          ></DocumentTypeSelector>
+          <div
+            className="my-10 w-full"
+            style={{ height: 'calc(100% - 150px)' }}
+          >
+            {docType === DocumentTypes[0] && (
+              <KFS2DocComponent setReviewState={handleViewStateChange}></KFS2DocComponent>
+            )}
+            {docType === DocumentTypes[1] && (
+              <KFS1DocComponent setReviewState={handleViewStateChange}></KFS1DocComponent>
+            )}
+            {docType === DocumentTypes[2] && (
+              <OtherDocComponent setReviewState={handleViewStateChange}></OtherDocComponent>
+            )}
+          </div>
+        </>
+      )}
     </div>
   );
 }
