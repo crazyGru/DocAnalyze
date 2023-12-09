@@ -1,11 +1,14 @@
-import React, { FunctionComponent, useState } from 'react';
+import React, { FunctionComponent, useEffect, useRef, useState } from 'react';
 import { FaFileUpload } from 'react-icons/fa';
+import { FaCheckCircle } from 'react-icons/fa';
 
 interface DocumentTypeSelectorProps {
   options: string[];
 }
 
-const DocumentTypeSelector: FunctionComponent<DocumentTypeSelectorProps> = ({options,}) => {
+const DocumentTypeSelector: FunctionComponent<DocumentTypeSelectorProps> = ({
+  options,
+}) => {
   const [isOpen, setIsOpen] = useState(false);
   const [selectedOption, setSelectedOption] = useState(options[0] || '');
 
@@ -48,15 +51,47 @@ interface DocumentUploadComponentProps {
   mode: string;
 }
 
-const DocumentUploadComponent: FunctionComponent<DocumentUploadComponentProps> = ({ mode }) => {
+const DocumentUploadComponent: FunctionComponent<
+  DocumentUploadComponentProps
+> = ({ mode }) => {
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [isUploaded, setIsUploaded] = useState(false);
+
+  const handleUploadClick = () => {
+    fileInputRef.current?.click();
+  };
+
+  const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      setIsUploaded(true);
+    } else {
+      setIsUploaded(false);
+    }
+  };
+
   return (
     <div className="w-full h-full border-2 border-dashed border-[#36363C] rounded-md mx-1 bg-[#1B1D2A] flex flex-col justify-center items-center space-y-4">
-      <FaFileUpload size={70} color="#525462"></FaFileUpload>
+      {isUploaded ? (
+        <FaCheckCircle size={70} color="#65CC16" />
+      ) : (
+        <FaFileUpload size={70} color="#525462" />
+      )}
       <div className="text-base">Drag a {mode} document data</div>
       <div className="text-xs text-[#9FA6B2]">Or</div>
-      <button className="bg-[#20212E] border-solid border border-[#393A4C] text-sm">
+      <button
+        onClick={handleUploadClick}
+        className="bg-[#20212E] border-solid border border-[#393A4C] text-sm"
+      >
         Select File
       </button>
+      <input
+        type="file"
+        accept=".doc, .docx"
+        style={{ display: 'none' }}
+        onChange={handleFileSelect}
+        ref={fileInputRef}
+      />
       <div className="text-xs text-[#9FA6B2]">Supports : DOC, DOCX </div>
     </div>
   );
@@ -69,10 +104,10 @@ const KFS2DocComponent = () => {
         className="flex justify-evenly w-full"
         style={{ height: 'calc(100% - 160px)' }}
       >
-        <div className='w-1/2 p-1'>
+        <div className="w-1/2 p-1">
           <DocumentUploadComponent mode="English"></DocumentUploadComponent>
         </div>
-        <div className='w-1/2 p-1'>
+        <div className="w-1/2 p-1">
           <DocumentUploadComponent mode="Chinese"></DocumentUploadComponent>
         </div>
       </div>
@@ -110,10 +145,10 @@ const OtherDocComponent = () => {
         className="flex justify-evenly w-full"
         style={{ height: 'calc(100% - 160px)' }}
       >
-        <div className='w-1/2 p-1'>
+        <div className="w-1/2 p-1">
           <DocumentUploadComponent mode="Other English"></DocumentUploadComponent>
         </div>
-        <div className='w-1/2 p-1'>
+        <div className="w-1/2 p-1">
           <DocumentUploadComponent mode="Other Chinese"></DocumentUploadComponent>
         </div>
       </div>
