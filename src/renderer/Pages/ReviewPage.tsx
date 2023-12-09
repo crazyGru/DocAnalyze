@@ -4,10 +4,11 @@ import { FaCheckCircle } from 'react-icons/fa';
 
 interface DocumentTypeSelectorProps {
   options: string[];
+  changeDocType : (newDocType: string) => void;
 }
 
 const DocumentTypeSelector: FunctionComponent<DocumentTypeSelectorProps> = ({
-  options,
+  options, changeDocType
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [selectedOption, setSelectedOption] = useState(options[0] || '');
@@ -16,6 +17,7 @@ const DocumentTypeSelector: FunctionComponent<DocumentTypeSelectorProps> = ({
   const selectOption = (option: string) => {
     setSelectedOption(option);
     setIsOpen(false);
+    changeDocType(option);
   };
   return (
     <div className="flex" style={{ alignItems: 'center' }}>
@@ -51,9 +53,7 @@ interface DocumentUploadComponentProps {
   mode: string;
 }
 
-const DocumentUploadComponent: FunctionComponent<
-  DocumentUploadComponentProps
-> = ({ mode }) => {
+const DocumentUploadComponent: FunctionComponent<DocumentUploadComponentProps> = ({ mode }) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isUploaded, setIsUploaded] = useState(false);
 
@@ -167,6 +167,10 @@ export default function ReviewPage() {
     'Single KFS Document',
     'Other Document',
   ];
+  const [docType, setDocType] = useState<string>(DocumentTypes[0]);
+  const handleDocTypeChange = (newDocType:string) =>{
+    setDocType(newDocType);
+  };
   return (
     <div className="p-8 pb-2 w-full h-full">
       <div className="">
@@ -184,9 +188,11 @@ export default function ReviewPage() {
         </svg>
       </div>
       <div className="w-full border-t border-white-500 mt-5 mb-10" />
-      <DocumentTypeSelector options={DocumentTypes}></DocumentTypeSelector>
+      <DocumentTypeSelector options={DocumentTypes} changeDocType={handleDocTypeChange}></DocumentTypeSelector>
       <div className="my-10 w-full" style={{ height: 'calc(100% - 150px)' }}>
-        <OtherDocComponent />
+        {docType===DocumentTypes[0]&&(<KFS2DocComponent></KFS2DocComponent>)}
+        {docType===DocumentTypes[1]&&(<KFS1DocComponent></KFS1DocComponent>)}
+        {docType===DocumentTypes[2]&&(<OtherDocComponent></OtherDocComponent>)}
       </div>
     </div>
   );
