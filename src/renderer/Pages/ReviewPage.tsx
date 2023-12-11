@@ -1,157 +1,389 @@
 import React, { FunctionComponent, useContext, useRef, useState } from 'react';
-import { FaFileUpload } from 'react-icons/fa';
-import { FaCheckCircle } from 'react-icons/fa';
 import { AppContext } from '../App';
+import { DocumentUploadComponent } from '../Components/DocumentUpload';
+import { DocumentTypeSelector } from '../Components/DocumentTypeSelector';
+import { FaSpinner } from 'react-icons/fa';
+import { FaFilePdf } from 'react-icons/fa';
 
-interface DocumentTypeSelectorProps {
-  options: string[];
-  changeDocType: (newDocType: string) => void;
+import { Document as PDFDocument, Page, pdfjs } from 'react-pdf';
+
+pdfjs.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjs.version}/pdf.worker.min.js`;
+
+interface DocComponentProps {
+  setReviewState: (isReview: boolean) => void;
 }
-
-const DocumentTypeSelector: FunctionComponent<DocumentTypeSelectorProps> = ({
-  options,
-  changeDocType,
+interface DocProps {
+  isUploaded: boolean;
+  docID: string;
+}
+const KFS2DocComponent: FunctionComponent<DocComponentProps> = ({
+  setReviewState,
 }) => {
-  const [isOpen, setIsOpen] = useState(false);
-  const [selectedOption, setSelectedOption] = useState(options[0] || '');
+  const [currentStep, setCurrentStep] = useState<number>(1);
+  const [engDocUploaded, setEngDocUploaded] = useState<DocProps>({
+    isUploaded: false,
+    docID: '',
+  });
+  const [chDocUploaded, setChDocUploaded] = useState<DocProps>({
+    isUploaded: false,
+    docID: '',
+  });
+  const [resDocID, setResDocID] = useState<string>('');
+  const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [resultURL, setResultURL] = useState<string>('');
 
-  const toggleDropdown = () => setIsOpen(!isOpen);
-  const selectOption = (option: string) => {
-    setSelectedOption(option);
-    setIsOpen(false);
-    changeDocType(option);
+  const handleSetEngDocInfo = (newState: boolean, docID: string) => {
+    setEngDocUploaded({ isUploaded: newState, docID: docID });
   };
-  return (
-    <div className="flex" style={{ alignItems: 'center' }}>
-      <div className="text-base mr-10">Document Type:</div>
-      <div className="relative inline-block w-96">
-        <div
-          className="form-select appearance-none block w-full px-3 py-2 text-base font-normal text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 bg-clip-padding bg-no-repeat border border-solid border-gray-300 dark:border-gray-700 rounded-full transition ease-in-out m-0 focus:text-gray-700 dark:focus:text-gray-300 focus:bg-white dark:focus:bg-gray-800 focus:border-blue-600 focus:outline-none cursor-pointer"
-          onClick={toggleDropdown}
-        >
-          {selectedOption}
-        </div>
-        {isOpen && (
-          <div className="absolute mt-1 w-full rounded-3xl bg-white dark:bg-gray-800 shadow-lg border border-gray-800">
-            <ul className="text-base overflow-auto text-gray-700 dark:text-gray-300">
-              {options.map((option, index) => (
-                <li
-                  key={index}
-                  className="px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer rounded-full dark:hover:border border-blue-600"
-                  onClick={() => selectOption(option)}
-                >
-                  {option}
-                </li>
-              ))}
-            </ul>
-          </div>
-        )}
-      </div>
-    </div>
-  );
-};
-
-interface DocumentUploadComponentProps {
-  mode: string;
-}
-
-const DocumentUploadComponent: FunctionComponent<
-  DocumentUploadComponentProps
-> = ({ mode }) => {
-  const fileInputRef = useRef<HTMLInputElement>(null);
-  const [isUploaded, setIsUploaded] = useState(false);
-  const [fileName, setFileName] = useState("");
-
-  const handleUploadClick = () => {
-    fileInputRef.current?.click();
+  const handleSetChDocInfo = (newState: boolean, docID: string) => {
+    setChDocUploaded({ isUploaded: newState, docID: docID });
   };
 
-  const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (file) {
-      setIsUploaded(true);
-      setFileName(file.name);
-    } else {
-      setIsUploaded(false);
+  const handleReview = async () => {
+    setIsLoading(true);
+    const url = 'http://172.104.33.232:8000/project/review-two';
+    const data = {
+      en_doc_id: engDocUploaded.docID,
+      zh_doc_id: chDocUploaded.docID,
+    };
+    try {
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `${localStorage.getItem('auth-token')}`,
+        },
+        body: JSON.stringify(data),
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! Status: ${response.status}`);
+      }
+      const result = await response.json();
+      console.log(result, result.document_id);
+      setResDocID(result.document_id);
+      const downPdfURL = `http://172.104.33.232:8000/project/download/pdf/${result.document_id}`;
+      fetch(downPdfURL, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `${localStorage.getItem('auth-token')}`,
+        },
+      })
+        .then((response) => {
+          if (!response.ok) {
+            throw new Error(`HTTP error! Status: ${response.status}`);
+          }
+          return response.blob();
+        })
+        .then((blob) => {
+          const pdfUrl = URL.createObjectURL(blob);
+          console.log(pdfUrl);
+          setResultURL(pdfUrl);
+        })
+        .catch((error) => {
+          console.error('Error fetching the PDF:', error);
+        });
+
+      setCurrentStep(currentStep + 1);
+    } catch (error) {
+      console.error('Error reviewing:', error);
+    }
+
+    setIsLoading(false);
+  };
+
+  const handleDownload = async () => {
+    const downloadURL = `http://172.104.33.232:8000/project/download/${resDocID}`;
+    const response = await fetch(downloadURL, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `${localStorage.getItem('auth-token')}`,
+      },
+    });
+    if (!response.ok) {
+      throw new Error(`HTTP error! Status: ${response.status}`);
+    }
+    const result = await response.json();
+    console.log(result, result.link);
+
+    try {
+      // Replace 'fileUrl' with your file link
+
+      // Fetching the file
+      const response = await fetch(result.link);
+      const blob = await response.blob();
+
+      // Creating a temporary link to trigger the download
+      const downloadUrl = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = downloadUrl;
+      link.download = 'downloadedFile'; // Set the file name here
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(downloadUrl);
+    } catch (error) {
+      console.error('Error downloading the file: ', error);
     }
   };
-
-  return (
-    <div className="w-full h-full border-2 border-dashed border-[#36363C] rounded-md mx-1 bg-[#1B1D2A] flex flex-col justify-center items-center space-y-4">
-      {isUploaded ? (
-        <>
-        <FaCheckCircle size={70} color="#65CC16" />
-        <div className="text-base">{fileName}</div>
-        </>
-      ) : (
-        <>
-        <FaFileUpload size={70} color="#525462" />
-        <div className="text-base">Drag a {mode} document data</div>
-        </>
-      )}
-      <div className="text-xs text-[#9FA6B2]">Or</div>
-      <button
-        onClick={handleUploadClick}
-        className="bg-[#20212E] border-solid border border-[#393A4C] text-sm"
-      >
-        Select File
-      </button>
-      <input
-        type="file"
-        accept=".doc, .docx"
-        style={{ display: 'none' }}
-        onChange={handleFileSelect}
-        ref={fileInputRef}
-      />
-      <div className="text-xs text-[#9FA6B2]">Supports : DOC, DOCX </div>
-    </div>
-  );
-};
-interface DocComponentProps{
-  setReviewState : (isReview : boolean) => void;
-}
-const KFS2DocComponent : FunctionComponent<DocComponentProps> = ({setReviewState}) => {
-  return (
-    <div className="w-full h-full rounded-2xl bg-[#262732] p-5 text-2xl	space-y-4">
+  const stepOne = (
+    <>
       <div>Upload 1 English document and 1 Chinese document</div>
       <div
         className="flex justify-evenly w-full"
         style={{ height: 'calc(100% - 160px)' }}
       >
         <div className="w-1/2 p-1">
-          <DocumentUploadComponent mode="English"></DocumentUploadComponent>
+          <DocumentUploadComponent
+            mode="English"
+            isUploaded={engDocUploaded.isUploaded}
+            setIsUploaded={handleSetEngDocInfo}
+          />
         </div>
         <div className="w-1/2 p-1">
-          <DocumentUploadComponent mode="Chinese"></DocumentUploadComponent>
+          <DocumentUploadComponent
+            mode="Chinese"
+            isUploaded={chDocUploaded.isUploaded}
+            setIsUploaded={handleSetChDocInfo}
+          />
         </div>
       </div>
       <div className="w-full h-24 bg-[#1B1D2A] rounded flex justify-end p-5 font-bold">
-        <button className="bg-[#306BF3] border-solid border border-[#252637]" onClick={() => setReviewState(true)}>
+        <button
+          className="bg-[#306BF3] border-solid border border-[#252637] flex items-center justify-between"
+          onClick={handleReview}
+          disabled={isLoading}
+        >
+          {isLoading && <FaSpinner className="spin-animation" />}
           Review
         </button>
       </div>
+    </>
+  );
+  const stepTwo = (
+    <div className="h-full flex space-x-4 justify-evenly">
+      <object
+        className="pdf-previewer custom-scroll"
+        data={resultURL}
+        type="application/pdf"
+        width="80%"
+        height="100%"
+      >
+        <p>
+          Your browser does not support PDFs.
+          <a href={resultURL}>Download the PDF</a>.
+        </p>
+      </object>
+      <div className="flex flex-col space-y-4 w-[20%]">
+        <div className="text-sm font-normal leading-normal text-stone-400 font-sans">
+          You have uploaded the following two documents for review. Please check
+          the review results on the left column.
+        </div>
+        <div className="w-full border border-slate-600 p-2 flex items-center text-red-700 overflow-hidden justify-start space-x-2 bold">
+          <div>
+            <FaFilePdf />
+          </div>
+          <div className="text-sm ">{engDocUploaded.docID}</div>
+        </div>
+        <div className="w-full border border-slate-600 p-2 flex items-center text-red-700 overflow-hidden justify-start space-x-2 bold">
+          <div>
+            <FaFilePdf />
+          </div>
+          <div className="text-sm ">{chDocUploaded.docID}</div>
+        </div>
+        <div
+          className="w-full border border-slate-600 p-2 flex items-center text-white bg-[#3371BC] hover:bg-[#2C63A0] active:bg-[#1E4D80] overflow-hidden justify-center font-bold text-sm cursor-pointer space-x-2"
+          onClick={handleDownload}
+        >
+          Download
+        </div>
+      </div>
+    </div>
+  );
+
+  return (
+    <div className="w-full h-full rounded-2xl bg-[#262732] p-5 text-2xl	space-y-4">
+      {currentStep === 1 && stepOne}
+      {currentStep === 2 && stepTwo}
     </div>
   );
 };
-const KFS1DocComponent : FunctionComponent<DocComponentProps>= ({setReviewState}) => {
-  return (
-    <div className="w-full h-full rounded-2xl bg-[#262732] p-5 text-2xl	space-y-4">
+const KFS1DocComponent: FunctionComponent<DocComponentProps> = ({
+  setReviewState,
+}) => {
+  const [currentStep, setCurrentStep] = useState<number>(1);
+  const [DocUploaded, setDocUploaded] = useState<DocProps>({
+    isUploaded: false,
+    docID: '',
+  });
+  const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [resDocID, setResDocID] = useState<string>('');
+  const [resultURL, setResultURL] = useState<string>('');
+  const handleSetEngDocInfo = (newState: boolean, docID: string) => {
+    setDocUploaded({ isUploaded: newState, docID: docID });
+  };
+  const handleReview = async () => {
+    setIsLoading(true);
+    const url = 'http://172.104.33.232:8000/project/review-one';
+    const data = {
+      single_doc_id: DocUploaded.docID,
+    };
+    console.log(data);
+    try {
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `${localStorage.getItem('auth-token')}`,
+        },
+        body: JSON.stringify(data),
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! Status: ${response.status}`);
+      }
+      const result = await response.json();
+      console.log(result, result.document_id);
+      setResDocID(result.document_id);
+      const downPdfURL = `http://172.104.33.232:8000/project/download/pdf/${result.document_id}`;
+      fetch(downPdfURL, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `${localStorage.getItem('auth-token')}`,
+        },
+      })
+        .then((response) => {
+          if (!response.ok) {
+            throw new Error(`HTTP error! Status: ${response.status}`);
+          }
+          return response.blob();
+        })
+        .then((blob) => {
+          const pdfUrl = URL.createObjectURL(blob);
+          console.log(pdfUrl);
+          setResultURL(pdfUrl);
+        })
+        .catch((error) => {
+          console.error('Error fetching the PDF:', error);
+        });
+
+      setCurrentStep(currentStep + 1);
+    } catch (error) {
+      console.error('Error reviewing:', error);
+    }
+
+    setIsLoading(false);
+  };
+
+  const handleDownload = async () => {
+    const downloadURL = `http://172.104.33.232:8000/project/download/${resDocID}`;
+    const response = await fetch(downloadURL, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `${localStorage.getItem('auth-token')}`,
+      },
+    });
+    if (!response.ok) {
+      throw new Error(`HTTP error! Status: ${response.status}`);
+    }
+    const result = await response.json();
+    console.log(result, result.link);
+
+    try {
+      // Replace 'fileUrl' with your file link
+
+      // Fetching the file
+      const response = await fetch(result.link);
+      const blob = await response.blob();
+
+      // Creating a temporary link to trigger the download
+      const downloadUrl = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = downloadUrl;
+      link.download = 'downloadedFile'; // Set the file name here
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(downloadUrl);
+    } catch (error) {
+      console.error('Error downloading the file: ', error);
+    }
+  };
+
+  const stepOne = (
+    <>
       <div>Upload Single KFS document</div>
       <div
         className="flex justify-evenly w-full"
         style={{ height: 'calc(100% - 160px)' }}
       >
-        <DocumentUploadComponent mode="Single KFS"></DocumentUploadComponent>
+        <DocumentUploadComponent
+          mode="Single KFS"
+          isUploaded={DocUploaded.isUploaded}
+          setIsUploaded={handleSetEngDocInfo}
+        ></DocumentUploadComponent>
       </div>
       <div className="w-full h-24 bg-[#1B1D2A] rounded flex justify-end p-5 font-bold">
-        <button className="bg-[#306BF3] border-solid border border-[#252637]" onClick={() => setReviewState(true)}>
+        <button
+          className="bg-[#306BF3] border-solid border border-[#252637] flex items-center justify-between"
+          onClick={handleReview}
+          disabled={isLoading}
+        >
+          {isLoading && <FaSpinner className="spin-animation" />}
           Review
         </button>
       </div>
+    </>
+  );
+  const stepTwo = (
+    <div className="h-full flex space-x-4 justify-evenly">
+      <object
+        className="pdf-previewer custom-scroll"
+        data={resultURL}
+        type="application/pdf"
+        width="80%"
+        height="100%"
+      >
+        <p>
+          Your browser does not support PDFs.
+          <a href={resultURL}>Download the PDF</a>.
+        </p>
+      </object>
+      <div className="flex flex-col space-y-4 w-[20%]">
+        <div className="text-sm font-normal leading-normal text-stone-400 font-sans">
+          You have uploaded the following two documents for review. Please check the review results on the left column.
+        </div>
+        <div className="w-full border border-slate-600 p-2 flex items-center text-red-700 overflow-hidden justify-start space-x-2 bold">
+          <div>
+            <FaFilePdf />
+          </div>
+          <div className="text-sm ">{DocUploaded.docID}</div>
+        </div>
+        <div
+          className="w-full border border-slate-600 p-2 flex items-center text-white bg-[#3371BC] hover:bg-[#2C63A0] active:bg-[#1E4D80] overflow-hidden justify-center font-bold text-sm cursor-pointer space-x-2"
+          onClick={handleDownload}
+        >
+          Download
+        </div>
+      </div>
+    </div>
+  );
+  return (
+    <div className="w-full h-full rounded-2xl bg-[#262732] p-5 text-2xl	space-y-4">
+      {currentStep === 1 && stepOne}
+      {currentStep === 2 && stepTwo}
     </div>
   );
 };
-const OtherDocComponent : FunctionComponent<DocComponentProps>= ({setReviewState}) => {
+const OtherDocComponent: FunctionComponent<DocComponentProps> = ({
+  setReviewState,
+}) => {
+  const [engDocUploaded, setEngDocUploaded] = useState<boolean>(false);
+  const [chDocUploaded, setChDocUploaded] = useState<boolean>(false);
   return (
     <div className="w-full h-full rounded-2xl bg-[#262732] p-5 text-2xl	space-y-4">
       <div>Upload 1 English document and 1 Chinese document</div>
@@ -160,14 +392,25 @@ const OtherDocComponent : FunctionComponent<DocComponentProps>= ({setReviewState
         style={{ height: 'calc(100% - 160px)' }}
       >
         <div className="w-1/2 p-1">
-          <DocumentUploadComponent mode="Other English"></DocumentUploadComponent>
+          <DocumentUploadComponent
+            mode="Other English"
+            isUploaded={engDocUploaded}
+            setIsUploaded={setEngDocUploaded}
+          ></DocumentUploadComponent>
         </div>
         <div className="w-1/2 p-1">
-          <DocumentUploadComponent mode="Other Chinese"></DocumentUploadComponent>
+          <DocumentUploadComponent
+            mode="Other Chinese"
+            isUploaded={chDocUploaded}
+            setIsUploaded={setChDocUploaded}
+          ></DocumentUploadComponent>
         </div>
       </div>
       <div className="w-full h-24 bg-[#1B1D2A] rounded flex justify-end p-5 font-bold">
-        <button className="bg-[#306BF3] border-solid border border-[#252637]" onClick={() => setReviewState(true)}>
+        <button
+          className="bg-[#306BF3] border-solid border border-[#252637]"
+          onClick={() => setReviewState(true)}
+        >
           Review
         </button>
       </div>
@@ -177,10 +420,10 @@ const OtherDocComponent : FunctionComponent<DocComponentProps>= ({setReviewState
 
 export default function ReviewPage() {
   const app = useContext(AppContext);
-  const appName = "Review Translation";
+  const appName = 'Review Translation';
 
-  const isShow = (app?.currentPage===appName)?"":"hidden";
-  const mWidth = app?.showMenu ? "50vw" : "50vw - 256px";
+  const isShow = app?.currentPage === appName ? '' : 'hidden';
+  const mWidth = app?.showMenu ? '50vw' : '50vw - 256px';
 
   const DocumentTypes = [
     '2 KFS Documents',
@@ -189,8 +432,12 @@ export default function ReviewPage() {
   ];
   const [docType, setDocType] = useState<string>(DocumentTypes[0]);
   const [docReview, setDocReview] = useState<boolean>(false);
-  const handleDocTypeChange = (newDocType: string) => { setDocType(newDocType); };
-  const handleViewStateChange = (isReview: boolean) => { setDocReview(isReview); };
+  const handleDocTypeChange = (newDocType: string) => {
+    setDocType(newDocType);
+  };
+  const handleViewStateChange = (isReview: boolean) => {
+    setDocReview(isReview);
+  };
   return (
     <div className={`${isShow} p-8 pb-2 h-full w-full`}>
       <div className="">
@@ -207,7 +454,7 @@ export default function ReviewPage() {
           />
         </svg>
       </div>
-      <div className="w-full border-t border-white-500 mt-5 mb-10"/>
+      <div className="w-full border-t border-white-500 mt-5 mb-10" />
       {docReview ? (
         <>wwww</>
       ) : (
@@ -221,13 +468,19 @@ export default function ReviewPage() {
             style={{ height: 'calc(100% - 150px)' }}
           >
             {docType === DocumentTypes[0] && (
-              <KFS2DocComponent setReviewState={handleViewStateChange}></KFS2DocComponent>
+              <KFS2DocComponent
+                setReviewState={handleViewStateChange}
+              ></KFS2DocComponent>
             )}
             {docType === DocumentTypes[1] && (
-              <KFS1DocComponent setReviewState={handleViewStateChange}></KFS1DocComponent>
+              <KFS1DocComponent
+                setReviewState={handleViewStateChange}
+              ></KFS1DocComponent>
             )}
             {docType === DocumentTypes[2] && (
-              <OtherDocComponent setReviewState={handleViewStateChange}></OtherDocComponent>
+              <OtherDocComponent
+                setReviewState={handleViewStateChange}
+              ></OtherDocComponent>
             )}
           </div>
         </>

@@ -1,148 +1,468 @@
-import React, { FunctionComponent, useContext, useRef, useState } from 'react';
-import { FaFileUpload } from 'react-icons/fa';
-import { FaCheckCircle } from 'react-icons/fa';
+import React, { FunctionComponent, useContext, useState } from 'react';
 import { AppContext } from '../App';
+import { DocumentUploadComponent } from '../Components/DocumentUpload';
+import { DocumentTypeSelector } from '../Components/DocumentTypeSelector';
+import { ProgressBar } from '../Components/ProgressBar';
+import { ParagraphComponent } from '../Components/ParagraphAnalyzer';
+import { FaFilePdf } from 'react-icons/fa';
 
-interface DocumentTypeSelectorProps {
-  options: string[];
-  changeDocType: (newDocType: string) => void;
+const trainingText =
+  'We are training AI model with your custom translation style. It takes a couple of minutes. Please wait...';
+const analyzingText =
+  'We are analyzing your document. It takes a couple of minutes. Please wait...';
+
+const paragraphTxts = [
+  '(ii)	“Common Facilities” mean those facilities and equipment for the common use and benefit of the Lot and the Building and not for the use and benefit of a particular Unit exclusively including but not limited to the underground terminal manholes, an undergr Common Facilities” mean those facilities and equipment for the common use and benefit of the Lot and the Building and not for the use and benefit of a particular Unit exclusively including but not limited to the underground terminal manholes, an underg',
+  '(ii)	“Common Facilities” mean those facilities and equipment for the common use and benefit of the Lot and the Building and not for the use and benefit of a particular Unit exclusively including but not limited to the underground terminal manholes, an undergr Common Facilities” mean those facilities and equipment for the common use and benefit of the Lot and the Building and not for the use and benefit of a particular Unit exclusively including but not limited to the underground terminal manholes, an underg underground terminal manholes, an undergr Common Facilities” mean those facilities and equipment for the common use and benefit of the Lot and the Building and not for the use and benefit of a particular Unit exclusively including but not limited to the underground terminal manholes, an underg underground terminal manholes, an undergr Common Facilities” mean those facilities and equipment for the common use and benefit of the Lot. (ii)	“Common Facilities” mean those facilities and equipment for the common use and benefit of the Lot and the Building and not for the use and benefit of a particular Unit exclusively including but not limited to the underground terminal manholes, an undergr Common Facilities” mean those facilities and equipment for the common use and benefit of the Lot and the Building and not for the use and benefit of a particular Unit exclusively including but not limited to the underground terminal manholes, an underg underground terminal manholes, an undergr Common Facilities” mean those facilities and equipment for the common use and benefit of the Lot and the Building and not for the use and benefit of a particular Unit exclusively including but not limited to the underground terminal manholes, an underg underground terminal manholes, an undergr Common Facilities” mean those facilities and equipment for the common use and benefit of the Lot.',
+  '(ii)	“Common Facilities” mean those facilities and equipment for the common use and benefit of the Lot and the Building and not for the use and benefit of a particular Unit exclusively including but not limited to the underground terminal manholes, an undergr Common Facilities” mean those facilities and equipment for the common use and benefit of the Lot and the Building and not for the use and benefit of a particular Unit exclusively including but not limited to the underground terminal manholes, an underg',
+];
+
+interface ParagraphProps {
+  originalID: number;
+  text: string;
 }
 
-const DocumentTypeSelector: FunctionComponent<DocumentTypeSelectorProps> = ({
-  options,
-  changeDocType,
-}) => {
-  const [isOpen, setIsOpen] = useState(false);
-  const [selectedOption, setSelectedOption] = useState(options[0] || '');
-
-  const toggleDropdown = () => setIsOpen(!isOpen);
-  const selectOption = (option: string) => {
-    setSelectedOption(option);
-    setIsOpen(false);
-    changeDocType(option);
-  };
-  return (
-    <div className="flex" style={{ alignItems: 'center' }}>
-      <div className="text-base mr-10">Document Type:</div>
-      <div className="relative inline-block w-96">
-        <div
-          className="form-select appearance-none block w-full px-3 py-2 text-base font-normal text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 bg-clip-padding bg-no-repeat border border-solid border-gray-300 dark:border-gray-700 rounded-full transition ease-in-out m-0 focus:text-gray-700 dark:focus:text-gray-300 focus:bg-white dark:focus:bg-gray-800 focus:border-blue-600 focus:outline-none cursor-pointer"
-          onClick={toggleDropdown}
-        >
-          {selectedOption}
-        </div>
-        {isOpen && (
-          <div className="absolute mt-1 w-full rounded-3xl bg-white dark:bg-gray-800 shadow-lg border border-gray-800">
-            <ul className="text-base overflow-auto text-gray-700 dark:text-gray-300">
-              {options.map((option, index) => (
-                <li
-                  key={index}
-                  className="px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer rounded-full dark:hover:border border-blue-600"
-                  onClick={() => selectOption(option)}
-                >
-                  {option}
-                </li>
-              ))}
-            </ul>
-          </div>
-        )}
-      </div>
-    </div>
-  );
-};
-
-interface DocumentUploadComponentProps {
-  mode: string;
-}
-
-const DocumentUploadComponent: FunctionComponent<
-  DocumentUploadComponentProps
-> = ({ mode }) => {
-  const fileInputRef = useRef<HTMLInputElement>(null);
-  const [isUploaded, setIsUploaded] = useState(false);
-  const [fileName, setFileName] = useState('');
-
-  const handleUploadClick = () => {
-    fileInputRef.current?.click();
-  };
-
-  const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (file) {
-      setIsUploaded(true);
-      setFileName(file.name);
-    } else {
-      setIsUploaded(false);
-    }
-  };
-
-  return (
-    <div className="w-full h-full border-2 border-dashed border-[#36363C] rounded-md mx-1 bg-[#1B1D2A] flex flex-col justify-center items-center space-y-4">
-      {isUploaded ? (
-        <>
-          <FaCheckCircle size={70} color="#65CC16" />
-          <div className="text-base">{fileName}</div>
-        </>
-      ) : (
-        <>
-          <FaFileUpload size={70} color="#525462" />
-          <div className="text-base">Drag a {mode} document data</div>
-        </>
-      )}
-      <div className="text-xs text-[#9FA6B2]">Or</div>
-      <button
-        onClick={handleUploadClick}
-        className="bg-[#20212E] border-solid border border-[#393A4C] text-sm"
-      >
-        Select File
-      </button>
-      <input
-        type="file"
-        accept=".doc, .docx"
-        style={{ display: 'none' }}
-        onChange={handleFileSelect}
-        ref={fileInputRef}
-      />
-      <div className="text-xs text-[#9FA6B2]">Supports : DOC, DOCX </div>
-    </div>
-  );
-};
 interface DocComponentProps {
   setReviewState: (isReview: boolean) => void;
+}
+interface DocProps {
+  isUploaded: boolean;
+  docID: string;
 }
 const ProductKeyStatementsComponent: FunctionComponent<DocComponentProps> = ({
   setReviewState,
 }) => {
-  return (
-    <div className="w-full h-full rounded-2xl bg-[#262732] p-5 text-2xl	space-y-4">
-      <div className='flex justify-between items-center'>
-      <div>Step 1: Upload Reference Translation (Optional)</div>
-      <button
-          className="bg-[#306BF3] border-solid border border-[#252637] text-[14px] py-[0px]"
-          onClick={() => setReviewState(true)}
+  const [currentStep, setCurrentStep] = useState<number>(1);
+  const [progress, setProgress] = useState(0);
+  const [analyzeProgress, setAnalyzeProgress] = useState(0);
+  const [generateProgress, setGenerateProgress] = useState(0);
+  const [engDocUploaded, setEngDocUploaded] = useState<boolean>(false);
+  const [chDocUploaded, setChDocUploaded] = useState<boolean>(false);
+  const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [transDocUploaded, setTransDocUploaded] = useState<DocProps>({
+    isUploaded: false,
+    docID: '',
+  });
+  const handleSettransDocInfo = (newState: boolean, docID: string) => {
+    setTransDocUploaded({ isUploaded: newState, docID: docID });
+  };
+  const [paragraphs, setParagraphs] = useState<ParagraphProps[]>([]);
+  const [originPara, setOriginPara] = useState<string[]>([]);
+  const [resDocID, setResDocID] = useState<string>('');
+  const [resultURL, setResultURL] = useState<string>('');
+
+  const updateParagraphs = (newParagraphIndex: number, strIndex: number) => {
+    let tempParagraphs = [];
+    for (let i = 0; i < paragraphs.length; i++) {
+      if (i === newParagraphIndex) {
+        if (
+          paragraphs[i].text.substring(0, strIndex) !== '' &&
+          paragraphs[i].text.substring(0, strIndex) !== ' '
+        ) {
+          tempParagraphs.push({
+            originalID: paragraphs[i].originalID,
+            text: paragraphs[i].text.substring(0, strIndex),
+          });
+        }
+        if (
+          paragraphs[i].text.substring(strIndex) !== '' &&
+          paragraphs[i].text.substring(strIndex) !== ' '
+        ) {
+          tempParagraphs.push({
+            originalID: paragraphs[i].originalID,
+            text: paragraphs[i].text.substring(strIndex),
+          });
+        }
+        continue;
+      }
+      tempParagraphs.push(paragraphs[i]);
+    }
+    setParagraphs(tempParagraphs);
+    console.log(tempParagraphs);
+  };
+
+  const fillParagraphs = async () => {
+    setOriginPara(paragraphTxts);
+    const temp = paragraphTxts.map((para, index) => ({
+      originalID: index,
+      text: para,
+    }));
+    setParagraphs(temp);
+    console.log(temp);
+  };
+
+  const handleTrainStart = () => {
+    const interval = setInterval(() => {
+      const randomTime = Math.random() * 1000;
+      const randomIncrement = Math.floor(Math.random() * 10);
+      setProgress((prevProgress) =>
+        prevProgress + randomIncrement < 100
+          ? prevProgress + randomIncrement
+          : 100,
+      );
+      clearInterval(interval);
+      setTimeout(handleTrainStart, randomTime);
+    }, 20);
+    return () => clearInterval(interval);
+  };
+
+  const handleTranslateStart = () => {
+    const interval = setInterval(() => {
+      const randomTime = Math.random() * 1000;
+      const randomIncrement = Math.floor(Math.random() * 10);
+
+      setAnalyzeProgress((prevProgress) =>
+        prevProgress + randomIncrement < 100
+          ? prevProgress + randomIncrement
+          : 100,
+      );
+
+      if (analyzeProgress > 100) {
+        setCurrentStep(currentStep + 1);
+      }
+
+      clearInterval(interval);
+      setTimeout(handleTranslateStart, randomTime);
+    }, 0);
+
+    // Return a function to clear the interval when the component is unmounted or the function is stopped
+    return () => clearInterval(interval);
+  };
+
+  const handleGenerateStart = async () => {
+    setCurrentStep(currentStep + 1);
+    let references = {};
+    let index = 0;
+    for (let i = 0; i < originPara.length; i++) {
+      let temp = [];
+      for (; index < paragraphs.length; index++) {
+        if (paragraphs[index].originalID === i) {
+          temp.push(paragraphs[index].text);
+        } else {
+          break;
+        }
+      }
+      references[originPara[i]] = temp;
+    }
+
+    const url = 'http://172.104.33.232:8000/project/translate';
+    const data = {
+      doc_id: transDocUploaded.docID,
+      references: references,
+    };
+
+    try {
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `${localStorage.getItem('auth-token')}`,
+        },
+        body: JSON.stringify(data),
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! Status: ${response.status}`);
+      }
+      const result = await response.json();
+      console.log(result, result.document_id);
+      setResDocID(result.document_id);
+      const downPdfURL = `http://172.104.33.232:8000/project/download/pdf/${result.document_id}`;
+      fetch(downPdfURL, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `${localStorage.getItem('auth-token')}`,
+        },
+      })
+        .then((response) => {
+          if (!response.ok) {
+            throw new Error(`HTTP error! Status: ${response.status}`);
+          }
+          return response.blob();
+        })
+        .then((blob) => {
+          const pdfUrl = URL.createObjectURL(blob);
+          console.log(pdfUrl);
+          setResultURL(pdfUrl);
+        })
+        .catch((error) => {
+          console.error('Error fetching the PDF:', error);
+        });
+
+      setCurrentStep(currentStep + 1);
+    } catch (error) {
+      console.error('Error reviewing:', error);
+    }
+  };
+
+  const handleAnalyze = async () => {
+    fillParagraphs();
+    setCurrentStep(currentStep + 1);
+    return;
+    setIsLoading(true);
+    const url = 'http://172.104.33.232:8000/project/analyze';
+    const data = {
+      doc_id: transDocUploaded.docID,
+    };
+    try {
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `${localStorage.getItem('auth-token')}`,
+        },
+        body: JSON.stringify(data),
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! Status: ${response.status}`);
+      }
+      const result = await response.json();
+      console.log(result, result.result);
+      setParagraphs(result.result);
+    } catch {}
+  };
+
+  const handleDownload = async () => {
+    const downloadURL = `http://172.104.33.232:8000/project/download/${resDocID}`;
+    const response = await fetch(downloadURL, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `${localStorage.getItem('auth-token')}`,
+      },
+    });
+    if (!response.ok) {
+      throw new Error(`HTTP error! Status: ${response.status}`);
+    }
+    const result = await response.json();
+    console.log(result, result.link);
+
+    try {
+      // Replace 'fileUrl' with your file link
+
+      // Fetching the file
+      const response = await fetch(result.link);
+      const blob = await response.blob();
+
+      // Creating a temporary link to trigger the download
+      const downloadUrl = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = downloadUrl;
+      link.download = 'downloadedFile'; // Set the file name here
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(downloadUrl);
+    } catch (error) {
+      console.error('Error downloading the file: ', error);
+    }
+  };
+
+  const stepOne = (
+    <>
+      <div className="flex justify-between items-center">
+        <div>Step 1: Upload Reference Translation (Optional)</div>
+        <div
+          role="button" // This makes it clear that the div is being used as a button
+          className={`flex justify-center items-center border-solid border border-[#252637] text-[14px] py-[0px] h-[32px] w-[80px] rounded-xl cursor-pointer text-[#FFF] font-bold text-base text-center inline-block ${
+            progress !== 0 ? 'bg-[#525462]' : 'bg-[#306BF3]'
+          }`}
+          onClick={() => {
+            if (progress === 0) setCurrentStep(currentStep + 1);
+          }}
+          // Adding a tabindex of 0 makes the div focusable and thus more accessible
+          tabIndex={0}
+          // You can also add keyboard event handling for better accessibility
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' && progress === 0)
+              setCurrentStep(currentStep + 1);
+          }}
         >
           Skip
-        </button>
         </div>
+      </div>
       <div
         className="flex justify-evenly w-full"
         style={{ height: 'calc(100% - 160px)' }}
       >
         <div className="w-1/2 p-1">
-          <DocumentUploadComponent mode="English"></DocumentUploadComponent>
+          <DocumentUploadComponent
+            mode="English"
+            isUploaded={engDocUploaded}
+            setIsUploaded={setEngDocUploaded}
+          />
         </div>
         <div className="w-1/2 p-1">
-          <DocumentUploadComponent mode="Chinese"></DocumentUploadComponent>
+          <DocumentUploadComponent
+            mode="Chinese"
+            isUploaded={chDocUploaded}
+            setIsUploaded={setChDocUploaded}
+          />
         </div>
       </div>
-      <div className="w-full h-24 bg-[#1B1D2A] rounded flex justify-end p-5 font-bold">
-        <button
-          className="bg-[#306BF3] border-solid border border-[#252637]"
-          onClick={() => setReviewState(true)}
-        >
-          Review
-        </button>
+      <div className="w-full h-24 bg-[#1B1D2A] rounded flex justify-center p-5 font-bold items-center space-x-3">
+        {progress === 100 ? (
+          <button
+            className="bg-[#F33030] w-5/6"
+            onClick={() => setCurrentStep(currentStep + 1)}
+          >
+            You have successfully trained your own model! Press to Continue.
+          </button>
+        ) : (
+          <>
+            <div
+              className="w-[90%]"
+              style={{ visibility: progress === 0 ? 'hidden' : 'visible' }}
+            >
+              <ProgressBar value={progress} max={100} overview={trainingText} />
+            </div>
+            <div
+              role="button" // This makes it clear that the div is being used as a button
+              className={`flex justify-center items-center rounded-lg w-[160px] bg-[#306BF3] border-solid border border-[#252637] h-[43px] ${
+                progress !== 0 || (engDocUploaded && chDocUploaded) === false
+                  ? 'opacity-50 cursor-not-allowed'
+                  : 'cursor-pointer'
+              }`}
+              onClick={progress === 0 ? handleTrainStart : undefined}
+              // Adding a tabindex of 0 makes the div focusable and thus more accessible
+              tabIndex={0}
+              // You can also add keyboard event handling for better accessibility
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && progress === 0) handleTrainStart();
+              }}
+              // The style or additional class to visually indicate if it's disabled
+              style={{ pointerEvents: progress !== 0 ? 'none' : 'auto' }}
+            >
+              Train
+            </div>
+          </>
+        )}
       </div>
+    </>
+  );
+
+  const stepTwo = (
+    <>
+      <div>Step 2: Upload Document for Translation</div>
+      <div className="w-full" style={{ height: 'calc(100% - 160px)' }}>
+        <DocumentUploadComponent
+          mode="English"
+          isUploaded={transDocUploaded.isUploaded}
+          setIsUploaded={handleSettransDocInfo}
+        />
+      </div>
+      <div className="w-full h-24 bg-[#1B1D2A] rounded flex justify-center p-5 font-bold items-center space-x-3">
+        {analyzeProgress === 100 ? (
+          <button className="bg-[#F33030] w-5/6" onClick={handleAnalyze}>
+            You have successfully analyze your own doc! Press to Continue.
+          </button>
+        ) : (
+          <>
+            <div
+              className="w-[90%]"
+              style={{
+                visibility: analyzeProgress === 0 ? 'hidden' : 'visible',
+              }}
+            >
+              <ProgressBar
+                value={analyzeProgress}
+                max={100}
+                overview={analyzingText}
+              />
+            </div>
+            <div
+              role="button"
+              className={`flex justify-center items-center rounded-lg w-[160px] bg-[#306BF3] border-solid border border-[#252637] h-[43px] ${
+                analyzeProgress !== 0 || transDocUploaded.isUploaded === false
+                  ? 'opacity-50 cursor-not-allowed'
+                  : 'cursor-pointer'
+              }`}
+              onClick={analyzeProgress === 0 ? handleTranslateStart : undefined}
+              style={{ pointerEvents: analyzeProgress !== 0 ? 'none' : 'auto' }}
+            >
+              Translate
+            </div>
+          </>
+        )}
+      </div>
+    </>
+  );
+
+  const stepThree = (
+    <>
+      <div>
+        We noticed some long paragraphs in your document. All paragraphs should
+        be less 200 words. Please split them into shorter sentences.
+      </div>
+      <div
+        className="w-full bg-white rounded-md overflow-auto p-5 space-y-3 custom-scroll"
+        style={{ height: 'calc(100% - 160px)' }}
+      >
+        {paragraphs.map((para, index) => (
+          <ParagraphComponent
+            key={index}
+            index={index + 1}
+            text={para.text}
+            updateParagraphs={updateParagraphs}
+          />
+        ))}
+      </div>
+      <div className="w-full h-24 bg-[#1B1D2A] rounded flex justify-end p-5 font-bold items-center space-x-3">
+        <div
+          role="button"
+          className={`flex justify-center items-center rounded-lg w-[160px] bg-[#306BF3] border-solid border border-[#252637] h-[43px] cursor-pointer`}
+          onClick={handleGenerateStart}
+          style={{ pointerEvents: 'auto' }}
+        >
+          Translate
+        </div>
+      </div>
+    </>
+  );
+
+  const stepFour = (
+    <div className="h-full flex space-x-4 justify-evenly">
+      <object
+        className="pdf-previewer custom-scroll"
+        data={resultURL}
+        type="application/pdf"
+        width="80%"
+        height="100%"
+      >
+        <p>
+          Your browser does not support PDFs.
+          <a href={resultURL}>Download the PDF</a>.
+        </p>
+      </object>
+      <div className="flex flex-col space-y-4 w-[20%]">
+        <div className="text-sm font-normal leading-normal text-stone-400 font-sans">
+          You have uploaded the following two documents for review. Please check
+          the review results on the left column.
+        </div>
+        <div className="w-full border border-slate-600 p-2 flex items-center text-red-700 overflow-hidden justify-start space-x-2 bold">
+          <div>
+            <FaFilePdf />
+          </div>
+          <div className="text-sm ">{transDocUploaded.docID}</div>
+        </div>
+        <div
+          className="w-full border border-slate-600 p-2 flex items-center text-white bg-[#3371BC] hover:bg-[#2C63A0] active:bg-[#1E4D80] overflow-hidden justify-center font-bold text-sm cursor-pointer space-x-2"
+          onClick={handleDownload}
+        >
+          Download
+        </div>
+      </div>
+    </div>
+  );
+
+  return (
+    <div className="w-full h-full rounded-2xl bg-[#262732] p-5 text-2xl	space-y-4">
+      {currentStep === 1 && stepOne}
+      {currentStep === 2 && stepTwo}
+      {currentStep === 3 && stepThree}
+      {currentStep === 4 && stepFour}
     </div>
   );
 };
@@ -153,9 +473,7 @@ export default function GeneratePage() {
 
   const isShow = app?.currentPage === appName ? '' : 'hidden';
 
-  const DocumentTypes = [
-    'Product Key Facts Statements',
-  ];
+  const DocumentTypes = ['Product Key Facts Statements'];
   const [docType, setDocType] = useState<string>(DocumentTypes[0]);
   const [docReview, setDocReview] = useState<boolean>(false);
   const handleDocTypeChange = (newDocType: string) => {

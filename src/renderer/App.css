@@ -65,3 +65,40 @@ a:hover {
   align-items: center;
   margin: 20px 0;
 }
+
+/* Customize the scrollbar for elements with the 'custom-scroll' class */
+.custom-scroll::-webkit-scrollbar {
+  width: 4px; /* Width of the scrollbar */
+}
+
+.custom-scroll::-webkit-scrollbar-track {
+  background: #f1f1f1; /* Color of the scrollbar track */
+}
+
+.custom-scroll::-webkit-scrollbar-thumb {
+  background: #888; /* Color of the scrollbar thumb */
+}
+
+.custom-scroll::-webkit-scrollbar-thumb:hover {
+  background: #555; /* Color of the scrollbar thumb on hover */
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.spin-animation {
+  animation: spin 2s linear infinite;
+}
+
+.pdf-previewer {
+  height: 100%; /* Adjust the height of the object */
+  overflow: auto; /* Add scrollbars if necessary */
+  display: block; /* Makes the object a block-level element */
+  margin: 0 auto; /* Center the object if within a container */
+}

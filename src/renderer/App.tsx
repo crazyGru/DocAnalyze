@@ -6,10 +6,13 @@ import ReviewPage from './Pages/ReviewPage';
 import Header from './Components/Header';
 import Menu from './Components/Menu';
 import GeneratePage from './Pages/GeneratePage';
+import SignPage from './Pages/Sign';
+import UpdatePage from './Pages/UpdatePage';
 
 interface AppContextType {
   showMenu: boolean;
   currentPage : string;
+  isSignIn : boolean;
   updateApp: (showMenu: boolean, currentPage:string) => void;
 }
 
@@ -21,20 +24,30 @@ export default function App() {
     "Generate Translation",
     "Update Translation"
   ]
-  const [app, setApp] = useState({ showMenu: true, currentPage: pageTitles[0]});
+  const [app, setApp] = useState({ showMenu: true, currentPage: pageTitles[0], isSignIn: false});
   const updateApp = (showMenu: boolean, currentPage : string) => {
-    setApp({ showMenu, currentPage });
+    const key = localStorage.getItem("auth-token");
+    if(key===null){
+      setApp({ showMenu, currentPage, isSignIn:false});
+    }else{
+      setApp({ showMenu, currentPage, isSignIn:true});
+    }
   };
 
   return (
     <AppContext.Provider value={{...app, updateApp}}>
       <div className="bg-[#131420] w-screen h-screen">
+        {!app.isSignIn&&(<SignPage></SignPage>)}
+        {app.isSignIn&&(<>
         <Header></Header>
         <div className="flex p-1" style={{ height: 'calc(100% - 72px)' }}>
           <Menu></Menu>
           <ReviewPage></ReviewPage>
           <GeneratePage></GeneratePage>
-        </div>
+          <UpdatePage></UpdatePage>
+        </div></>
+        )
+        }
       </div>
     </AppContext.Provider>
   );
