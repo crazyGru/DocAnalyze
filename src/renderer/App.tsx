@@ -1,6 +1,5 @@
 import { MemoryRouter as Router, Routes, Route } from 'react-router-dom';
 import React, { createContext, useContext, useState } from 'react';
-import icon from '../../assets/icon.svg';
 import './App.css';
 import ReviewPage from './Pages/ReviewPage';
 import Header from './Components/Header';
@@ -8,6 +7,10 @@ import Menu from './Components/Menu';
 import GeneratePage from './Pages/GeneratePage';
 import SignPage from './Pages/Sign';
 import UpdatePage from './Pages/UpdatePage';
+import { ReactNotifications } from 'react-notifications-component';
+import 'react-notifications-component/dist/theme.css';
+import 'animate.css/animate.compat.css'; // If you're using animation
+
 
 interface AppContextType {
   showMenu: boolean;
@@ -37,6 +40,7 @@ export default function App() {
   return (
     <AppContext.Provider value={{...app, updateApp}}>
       <div className="bg-[#131420] w-screen h-screen">
+        <ReactNotifications/>
         {!app.isSignIn&&(<SignPage></SignPage>)}
         {app.isSignIn&&(<>
         <Header></Header>

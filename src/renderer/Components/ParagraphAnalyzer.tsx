@@ -3,7 +3,7 @@ import { FunctionComponent, useEffect, useRef } from 'react';
 interface ParagraphComponentProps {
   index: number;
   text: string;
-  updateParagraphs : (sepPgIndex : number, setStrIndex:number) => void;
+  updateParagraphs: (sepPgIndex: number, setStrIndex: number, flag:boolean) => void;
 }
 
 export const ParagraphComponent: FunctionComponent<ParagraphComponentProps> = ({
@@ -18,7 +18,12 @@ export const ParagraphComponent: FunctionComponent<ParagraphComponentProps> = ({
     return words.length;
   };
   const handleKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
-    if (e.key !== 'Enter') {
+    if (e.key === 'Backspace') {
+      // Add your logic for handling the Backspace key
+      e.preventDefault();
+      updateParagraphs(index - 1, 0, false);
+      
+    } else if (e.key !== 'Enter') {
       // Prevent all key presses except for Enter
       e.preventDefault();
     } else if (e.key === 'Enter' && !e.shiftKey) {
@@ -28,39 +33,39 @@ export const ParagraphComponent: FunctionComponent<ParagraphComponentProps> = ({
         // Insert a line break at the current cursor position
         document.execCommand('insertHTML', false, '<br>');
         const cursorPosition = getCaretIndex(divRef.current);
-        updateParagraphs(index-1, cursorPosition);
+        updateParagraphs(index - 1, cursorPosition, true);
       }
     }
   };
 
-    const getCaretIndex = (element: HTMLElement) => {
-        let position = 0;
-        const selection = window.getSelection();
-        if (selection && selection.rangeCount !== 0) {
-            const range = selection.getRangeAt(0);
-            const preCaretRange = range.cloneRange();
-            preCaretRange.selectNodeContents(element);
-            preCaretRange.setEnd(range.endContainer, range.endOffset);
-            position = preCaretRange.toString().length;
-        }
-        return position;
-    };
+  const getCaretIndex = (element: HTMLElement) => {
+    let position = 0;
+    const selection = window.getSelection();
+    if (selection && selection.rangeCount !== 0) {
+      const range = selection.getRangeAt(0);
+      const preCaretRange = range.cloneRange();
+      preCaretRange.selectNodeContents(element);
+      preCaretRange.setEnd(range.endContainer, range.endOffset);
+      position = preCaretRange.toString().length;
+    }
+    return position;
+  };
 
-    useEffect(() => {
-        if (divRef.current) {
-          divRef.current.innerHTML = formatText(text);
-        }
-      }, [text]);
+  useEffect(() => {
+    if (divRef.current) {
+      divRef.current.innerHTML = formatText(text);
+    }
+  }, [text]);
 
-      const formatText = (inputText: string): string => {
-        const words = inputText.split(/\s+/);
-        if (words.length > 200) {
-          const normalText = words.slice(0, 200).join(" ");
-          const italicText = words.slice(200).join(" ");
-          return `${normalText} <span class="italic text-gray-500">${italicText}</span>`;
-        }
-        return inputText;
-      };
+  const formatText = (inputText: string): string => {
+    const words = inputText.split(/\s+/);
+    if (words.length > 200) {
+      const normalText = words.slice(0, 200).join(' ');
+      const italicText = words.slice(200).join(' ');
+      return `${normalText} <span class="italic text-gray-500">${italicText}</span>`;
+    }
+    return inputText;
+  };
 
   return (
     <div className="flex space-x-2">
@@ -73,7 +78,11 @@ export const ParagraphComponent: FunctionComponent<ParagraphComponentProps> = ({
       >
         <div ref={divRef} onKeyDown={handleKeyDown} contentEditable></div>
         <br />
-        <div className={`w-full flex justify-end ${countWords(text) <= 210 ? 'text-green-500' : 'text-red-500'}`}>
+        <div
+          className={`w-full flex justify-end ${
+            countWords(text) <= 210 ? 'text-green-500' : 'text-red-500'
+          }`}
+        >
           {countWords(text)} words selected
         </div>
       </div>

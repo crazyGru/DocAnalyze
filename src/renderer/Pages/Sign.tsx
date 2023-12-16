@@ -1,92 +1,18 @@
 import { FunctionComponent, useState, useContext } from 'react';
 import { AppContext } from '../App';
+import {createNotification} from '../Components/notificationHelper';
 interface SignProps {
   setIsSignIn: (newState: boolean) => void;
 }
 const SignIn: FunctionComponent<SignProps> = ({ setIsSignIn }) => {
-    const app = useContext(AppContext);
-    const [email, setEmail] = useState("");
-    const [password, setPassword] = useState("");
-    const postData = async () => {
-        const url = 'http://172.104.33.232:8000/auth/login';
-        const data = {
-          email: email,
-          password: password,
-        };
-    
-        try {
-          const response = await fetch(url, {
-            method: 'POST', // *GET, POST, PUT, DELETE, etc.
-            mode: 'cors', // no-cors, *cors, same-origin, cors
-            cache: 'no-cache', // *default, no-cache, reload, force-cache, only-if-cached
-            credentials: 'same-origin', // include, *same-origin, omit
-            headers: {
-              'Content-Type': 'application/json',
-              // 'Content-Type': 'application/x-www-form-urlencoded',
-            },
-            redirect: 'follow', // manual, *follow, error
-            referrerPolicy: 'no-referrer', // no-referrer, *client
-            body: JSON.stringify(data), // body data type must match "Content-Type" header
-          });
-    
-          if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
-          }
-    
-          const result = await response.json();      
-          localStorage.setItem('auth-token', result.Authorization);
-          app?.updateApp(app.showMenu, app.currentPage);
-        } catch (error) {
-          console.error('There was an error!', error);
-        }
-      };
-  return (
-    <div className="w-full h-full flex flex-col justify-center items-center bg-[#131420]">
-      <div className="w-1/4 space-y-4 flex flex-col items-center">
-        <input
-          className="shadow appearance-none border  w-full py-2 px-3 text-gray-700 dark:text-white dark:bg-gray-700 leading-tight focus:outline-none focus:ring focus:border-blue-500"
-          id="email"
-          type="email"
-          value = {email}
-          onChange={(event)=>{setEmail(event.target.value)}}
-          placeholder="Email"
-        />
-        <input
-          className="shadow appearance-none border  w-full py-2 px-3 text-gray-700 dark:text-white dark:bg-gray-700 mb-3 leading-tight focus:outline-none focus:ring focus:border-blue-500"
-          id="password"
-          type="password"
-          value = {password}
-          onChange={(event)=>{setPassword(event.target.value)}}
-          placeholder="Password"
-        />
-        <button
-          className="bg-blue-700 hover:bg-blue-500 text-white font-bold  "
-          type="button"
-          onClick={postData}
-        >
-          Sign In
-        </button>
-        <br />
-        <div
-          className="font-light font-sans hover:underline hover:cursor-pointer"
-          onClick={() => {setIsSignIn(false)}}
-        >
-          Don't you have an account?{' '}
-        </div>
-      </div>
-    </div>
-  );
-};
-const SignUp: FunctionComponent<SignProps> = ({ setIsSignIn }) => {
-    const [email, setEmail] = useState("");
-    const [user, setUser] = useState("");
-    const [password, setPassword] = useState("");
+  const app = useContext(AppContext);
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const postData = async () => {
-    const url = 'http://172.104.33.232:8000/user';
+    const url = 'http://172.104.33.232:8000/auth/login';
     const data = {
       email: email,
-      username: user,
-      password: password
+      password: password,
     };
 
     try {
@@ -108,9 +34,12 @@ const SignUp: FunctionComponent<SignProps> = ({ setIsSignIn }) => {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
 
-      const result = await response.json();      
+      const result = await response.json();
       localStorage.setItem('auth-token', result.Authorization);
+      createNotification("success","", "Sign-In success");
+      app?.updateApp(app.showMenu, app.currentPage);
     } catch (error) {
+      createNotification("danger","", "Sign-In failed");
       console.error('There was an error!', error);
     }
   };
@@ -118,27 +47,115 @@ const SignUp: FunctionComponent<SignProps> = ({ setIsSignIn }) => {
     <div className="w-full h-full flex flex-col justify-center items-center bg-[#131420]">
       <div className="w-1/4 space-y-4 flex flex-col items-center">
         <input
-          className="shadow appearance-none border  w-full py-2 px-3 text-gray-700 dark:text-white dark:bg-gray-700 leading-tight focus:outline-none focus:ring focus:border-blue-500"
-          id="user"
-          type="user"
-          value = {user}
-          onChange={(event)=>{setUser(event.target.value)}}
-          placeholder="Username"
-        />
-        <input
-          className="shadow appearance-none border  w-full py-2 px-3 text-gray-700 dark:text-white dark:bg-gray-700 leading-tight focus:outline-none focus:ring focus:border-blue-500"
+          className="rounded-lg shadow appearance-none border  w-full py-2 px-3 text-gray-700 dark:text-white dark:bg-gray-700 leading-tight focus:outline-none focus:ring focus:border-blue-500"
           id="email"
           type="email"
-          value = {email}
-          onChange={(event)=>{setEmail(event.target.value)}}
+          value={email}
+          onChange={(event) => {
+            setEmail(event.target.value);
+          }}
           placeholder="Email"
         />
         <input
-          className="shadow appearance-none border  w-full py-2 px-3 text-gray-700 dark:text-white dark:bg-gray-700 mb-3 leading-tight focus:outline-none focus:ring focus:border-blue-500"
+          className="rounded-lg shadow appearance-none border  w-full py-2 px-3 text-gray-700 dark:text-white dark:bg-gray-700 mb-3 leading-tight focus:outline-none focus:ring focus:border-blue-500"
           id="password"
           type="password"
-          value = {password}
-          onChange={(event)=>{setPassword(event.target.value)}}
+          value={password}
+          onChange={(event) => {
+            setPassword(event.target.value);
+          }}
+          placeholder="Password"
+        />
+        <button
+          className="bg-blue-700 hover:bg-blue-500 text-white font-bold  "
+          type="button"
+          onClick={postData}
+        >
+          Sign In
+        </button>
+        <br />
+        <div
+          className="font-light font-sans hover:underline hover:cursor-pointer"
+          onClick={() => {
+            setIsSignIn(false);
+          }}
+        >
+          Don't you have an account?{' '}
+        </div>
+      </div>
+    </div>
+  );
+};
+const SignUp: FunctionComponent<SignProps> = ({ setIsSignIn }) => {
+  const [email, setEmail] = useState('');
+  const [user, setUser] = useState('');
+  const [password, setPassword] = useState('');
+  const postData = async () => {
+    const url = 'http://172.104.33.232:8000/user';
+    const data = {
+      email: email,
+      username: user,
+      password: password,
+    };
+
+    try {
+      const response = await fetch(url, {
+        method: 'POST', // *GET, POST, PUT, DELETE, etc.
+        mode: 'cors', // no-cors, *cors, same-origin, cors
+        cache: 'no-cache', // *default, no-cache, reload, force-cache, only-if-cached
+        credentials: 'same-origin', // include, *same-origin, omit
+        headers: {
+          'Content-Type': 'application/json',
+          // 'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        redirect: 'follow', // manual, *follow, error
+        referrerPolicy: 'no-referrer', // no-referrer, *client
+        body: JSON.stringify(data), // body data type must match "Content-Type" header
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const result = await response.json();
+      localStorage.setItem('auth-token', result.Authorization);
+      createNotification("success", "", "Sign-Up success");
+    } catch (error) {
+      createNotification("danger", "", "Sign-Up failed");
+      console.error('There was an error!', error);
+    }
+  };
+  return (
+    <div className="w-full h-full flex flex-col justify-center items-center bg-[#131420]">
+      <div className="w-1/4 space-y-4 flex flex-col items-center">
+        <input
+          className="rounded-lg shadow appearance-none border  w-full py-2 px-3 text-gray-700 dark:text-white dark:bg-gray-700 leading-tight focus:outline-none focus:ring focus:border-blue-500"
+          id="user"
+          type="user"
+          value={user}
+          onChange={(event) => {
+            setUser(event.target.value);
+          }}
+          placeholder="Username"
+        />
+        <input
+          className="rounded-lg shadow appearance-none border  w-full py-2 px-3 text-gray-700 dark:text-white dark:bg-gray-700 leading-tight focus:outline-none focus:ring focus:border-blue-500"
+          id="email"
+          type="email"
+          value={email}
+          onChange={(event) => {
+            setEmail(event.target.value);
+          }}
+          placeholder="Email"
+        />
+        <input
+          className="rounded-lg shadow appearance-none border  w-full py-2 px-3 text-gray-700 dark:text-white dark:bg-gray-700 mb-3 leading-tight focus:outline-none focus:ring focus:border-blue-500"
+          id="password"
+          type="password"
+          value={password}
+          onChange={(event) => {
+            setPassword(event.target.value);
+          }}
           placeholder="Password"
         />
         <button
@@ -166,7 +183,7 @@ export default function SignPage() {
 
   return (
     <div className="w-full h-full">
-      <div className="w-full h-1/2 flex items-end justify-center p-5">
+      <div className="w-full h-1/3 flex items-end justify-center p-5">
         <svg
           width="79"
           height="20"
