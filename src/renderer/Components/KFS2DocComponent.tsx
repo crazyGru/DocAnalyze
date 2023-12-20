@@ -1,22 +1,20 @@
-import React, { FunctionComponent, useContext, useEffect, useRef, useState } from 'react';
-import { AppContext } from '../App';
-import { DocumentUploadComponent } from '../Components/DocumentUpload';
-import { DocumentTypeSelector } from '../Components/DocumentTypeSelector';
-import { FaSpinner } from 'react-icons/fa';
-import { FaFilePdf } from 'react-icons/fa';
-import { FaChevronLeft } from 'react-icons/fa';
+import { FunctionComponent, useEffect, useState } from 'react';
 import { createNotification } from '../Components/notificationHelper';
-import { AskModal } from './Modal';
-import { ActiveButton } from '../Components/ActiveButton';
+import { DocumentUploadComponent } from './DocumentUpload';
+import { ActiveButton } from './ActiveButton';
+import { AskModal } from '../Pages/Modal';
+import { FaChevronLeft, FaSpinner, FaFilePdf } from 'react-icons/fa';
 
 interface DocComponentProps {
+  title: string;
   children: React.ReactNode;
 }
 interface DocProps {
   isUploaded: boolean;
   docID: string;
 }
-const KFS2DocComponent: FunctionComponent<DocComponentProps> = ({
+export const KFS2DocComponent: FunctionComponent<DocComponentProps> = ({
+  title,
   children,
 }) => {
   const [currentStep, setCurrentStep] = useState<number>(1);
@@ -34,6 +32,9 @@ const KFS2DocComponent: FunctionComponent<DocComponentProps> = ({
   const [modalIsOpen, setModalIsOpen] = useState<boolean>(false);
   const [yesPressed, setYesPressed] = useState(false);
 
+  const handleUpgradePageStep = (newPage: number) => {
+    setCurrentStep(newPage);
+  };
   const handleSetEngDocInfo = (newState: boolean, docID: string) => {
     setEngDocUploaded({ isUploaded: newState, docID: docID });
   };
@@ -41,9 +42,10 @@ const KFS2DocComponent: FunctionComponent<DocComponentProps> = ({
     setChDocUploaded({ isUploaded: newState, docID: docID });
   };
 
-  const handleUpdate = async () => {
+  const handleReview = async () => {
+    if (isLoading) return;
     setIsLoading(true);
-    const url = 'http://baba211ss.hopto.org:22384/project/update-translation';
+    const url = 'http://baba211ss.hopto.org:22384/project/review-two';
     const data = {
       en_doc_id: engDocUploaded.docID,
       zh_doc_id: chDocUploaded.docID,
@@ -59,13 +61,12 @@ const KFS2DocComponent: FunctionComponent<DocComponentProps> = ({
       });
 
       if (!response.ok) {
-        createNotification('danger', '', 'Updating failed');
+        createNotification('danger', '', 'Review failed');
         throw new Error(`HTTP error! Status: ${response.status}`);
       }
       const result = await response.json();
       console.log(result, result.document_id);
       setResDocID(result.document_id);
-      createNotification('success', '', 'Updating success');
       const downPdfURL = `http://baba211ss.hopto.org:22384/project/download/pdf/${result.document_id}`;
       fetch(downPdfURL, {
         method: 'GET',
@@ -76,11 +77,11 @@ const KFS2DocComponent: FunctionComponent<DocComponentProps> = ({
       })
         .then((response) => {
           if (!response.ok) {
-            createNotification('danger', '', 'Downloading failed');
+            createNotification('danger', '', 'Review failed');
             throw new Error(`HTTP error! Status: ${response.status}`);
           }
-          createNotification('success', '', 'Downloading success');
-          setCurrentStep(currentStep + 1);
+          createNotification('success', '', 'Review success');
+          handleUpgradePageStep(currentStep + 1);
           return response.blob();
         })
         .then((blob) => {
@@ -97,7 +98,7 @@ const KFS2DocComponent: FunctionComponent<DocComponentProps> = ({
     }
   };
 
-  const handleDownload = async (isOpen = true) => {
+  const handleDownload = async (openFile = true) => {
     const downloadURL = `http://baba211ss.hopto.org:22384/project/download/${resDocID}`;
     const response = await fetch(downloadURL, {
       method: 'POST',
@@ -107,6 +108,7 @@ const KFS2DocComponent: FunctionComponent<DocComponentProps> = ({
       },
     });
     if (!response.ok) {
+      createNotification('danger', '', 'Downloading failed');
       throw new Error(`HTTP error! Status: ${response.status}`);
     }
     const result = await response.json();
@@ -116,9 +118,10 @@ const KFS2DocComponent: FunctionComponent<DocComponentProps> = ({
       window.electron.ipcRenderer.sendMessage(
         'download-file',
         result.link,
-        isOpen,
+        openFile,
       );
     } catch (error) {
+      createNotification('danger', '', 'Downloading Error');
       console.error('Error downloading the file: ', error);
     }
   };
@@ -136,17 +139,18 @@ const KFS2DocComponent: FunctionComponent<DocComponentProps> = ({
     );
     return unsubscribe;
   }, [yesPressed, setCurrentStep, setModalIsOpen]);
+
   const handlePrevBtnClick = async () => {
+    if (isLoading) return;
     setModalIsOpen(true);
   };
-
   const handleYes = async () => {
     await handleDownload(false);
     setYesPressed(true);
   };
 
   const handleNo = () => {
-    console.log('OK clicked');
+    if (isLoading) return;
     setCurrentStep(1);
     setModalIsOpen(false);
   };
@@ -157,7 +161,7 @@ const KFS2DocComponent: FunctionComponent<DocComponentProps> = ({
   const stepOne = (
     <>
       <div className="rounded flex justify-between pr-4 text-sm h-5 items-center">
-        <div>Upload new English document and old Chinese document</div>
+        <div>Upload 1 English document and 1 Chinese document</div>
       </div>
       <div
         className="rounded flex justify-evenly w-full"
@@ -180,12 +184,12 @@ const KFS2DocComponent: FunctionComponent<DocComponentProps> = ({
           />
         </div>
       </div>
-      <div className="rounded w-full h-24 bg-[#1B1D2A] flex justify-end items-center pr-5">
+      <div className="rounded w-full h-24 bg-[#1B1D2A] flex justify-end items-center pr-5 ">
         <ActiveButton
           isEnabled={engDocUploaded.isUploaded && chDocUploaded.isUploaded}
           isLoading={isLoading}
-          text="Update"
-          onClick={handleUpdate}
+          text="Review"
+          onClick={handleReview}
         />
       </div>
     </>
@@ -203,7 +207,7 @@ const KFS2DocComponent: FunctionComponent<DocComponentProps> = ({
         <div>Result</div>
       </div>
       <div
-        className="rounded h-full flex space-x-4 justify-evenly"
+        className="rounded h-full flex space-x-4 justify-between"
         style={{ height: 'calc(100% - 32px)' }}
       >
         {isLoading ? (
@@ -258,7 +262,7 @@ const KFS2DocComponent: FunctionComponent<DocComponentProps> = ({
       {currentStep === 1 && (
         <>
           <div className="rounded text-2xl font-normal flex items-end ml-5">
-            Update Translation
+            {title}
           </div>
           <div className="rounded w-full border-t border-white-500" />
           {children}
@@ -282,30 +286,3 @@ const KFS2DocComponent: FunctionComponent<DocComponentProps> = ({
     </div>
   );
 };
-
-export default function UpdatePage() {
-  const app = useContext(AppContext);
-  const appName = 'Update Translation';
-
-  const isShow = app?.currentPage === appName ? '' : 'hidden';
-  const mWidth = app?.showMenu ? '50vw' : '50vw - 256px';
-
-  const DocumentTypes = ['2 KFS Documents'];
-  const [docType, setDocType] = useState<string>(DocumentTypes[0]);
-  const handleDocTypeChange = (newDocType: string) => {
-    setDocType(newDocType);
-  };
-  return (
-    <div className={`${isShow} mt-1 h-full w-full`}>
-      {docType === DocumentTypes[0] && (
-        <KFS2DocComponent>
-          <DocumentTypeSelector
-            options={DocumentTypes}
-            changeDocType={handleDocTypeChange}
-            idx={0}
-          ></DocumentTypeSelector>
-        </KFS2DocComponent>
-      )}
-    </div>
-  );
-}

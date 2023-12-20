@@ -1,3 +1,8 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+body {
+    font-family: 'Open Sans', sans-serif;
+    /* Replace with your chosen font */
+}

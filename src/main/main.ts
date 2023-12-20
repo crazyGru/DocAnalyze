@@ -9,11 +9,14 @@
  * `./src/main.js` using webpack. This gives us some performance wins.
  */
 import path from 'path';
-import { app, BrowserWindow, shell, ipcMain } from 'electron';
+import { app, BrowserWindow, shell, ipcMain, webContents } from 'electron';
 import { autoUpdater } from 'electron-updater';
 import log from 'electron-log';
 import MenuBuilder from './menu';
-import { resolveHtmlPath } from './util';
+import { checkDocLang, resolveHtmlPath } from './util';
+import { writeDocxFileFromUrl } from './document';
+import * as fs from 'fs';
+
 
 class AppUpdater {
   constructor() {
@@ -92,6 +95,7 @@ const createWindow = async () => {
     } else {
       mainWindow.show();
     }
+    mainWindow.maximize();
   });
 
   mainWindow.on('closed', () => {
@@ -135,3 +139,39 @@ app
     });
   })
   .catch(console.log);
+
+ipcMain.on('download-file', async (event, url: string, open: boolean) => {
+  if (url) {
+    const filePath = await writeDocxFileFromUrl(url)
+    if (filePath && open) {
+      shell.openPath(filePath).catch((error) => {
+        console.error('Failed to open file:', error);
+      });
+    }
+    if (filePath) {
+      mainWindow?.webContents.send('download-file-success', {
+        success: true,
+      });
+    }
+  }
+});
+
+ipcMain.on('checkLang', async (event, id: string, url: string) => {
+  try {
+    // Read the file as a buffer
+    if (id && url) {
+      const lang = await checkDocLang({ url });
+      mainWindow?.webContents.send('checkLang-result', {
+        id,
+        result: lang,
+      });
+    }
+  } catch (error) {
+    console.error('Error reading local file:', error);
+    // Handle the error, e.g., send an error message to the renderer process
+    mainWindow?.webContents.send('checkLang-result', {
+      id,
+      error: 'Error reading local file',
+    });
+  }
+});

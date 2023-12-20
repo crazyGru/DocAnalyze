@@ -1,53 +1,48 @@
-import React, { FunctionComponent, useContext, useEffect, useRef, useState } from 'react';
-import { AppContext } from '../App';
-import { DocumentUploadComponent } from '../Components/DocumentUpload';
-import { DocumentTypeSelector } from '../Components/DocumentTypeSelector';
-import { FaSpinner } from 'react-icons/fa';
-import { FaFilePdf } from 'react-icons/fa';
-import { FaChevronLeft } from 'react-icons/fa';
+import { FunctionComponent, useEffect, useState } from 'react';
 import { createNotification } from '../Components/notificationHelper';
-import { AskModal } from './Modal';
-import { ActiveButton } from '../Components/ActiveButton';
+import { DocumentUploadComponent } from './DocumentUpload';
+import { ActiveButton } from './ActiveButton';
+import { AskModal } from '../Pages/Modal';
+import { FaChevronLeft, FaSpinner, FaFilePdf } from 'react-icons/fa';
 
 interface DocComponentProps {
+  title: string;
   children: React.ReactNode;
 }
 interface DocProps {
   isUploaded: boolean;
   docID: string;
 }
-const KFS2DocComponent: FunctionComponent<DocComponentProps> = ({
+export const KFS1DocComponent: FunctionComponent<DocComponentProps> = ({
+  title,
   children,
 }) => {
   const [currentStep, setCurrentStep] = useState<number>(1);
-  const [engDocUploaded, setEngDocUploaded] = useState<DocProps>({
+  const [DocUploaded, setDocUploaded] = useState<DocProps>({
     isUploaded: false,
     docID: '',
   });
-  const [chDocUploaded, setChDocUploaded] = useState<DocProps>({
-    isUploaded: false,
-    docID: '',
-  });
-  const [resDocID, setResDocID] = useState<string>('');
   const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [resDocID, setResDocID] = useState<string>('');
   const [resultURL, setResultURL] = useState<string>('');
   const [modalIsOpen, setModalIsOpen] = useState<boolean>(false);
   const [yesPressed, setYesPressed] = useState(false);
 
-  const handleSetEngDocInfo = (newState: boolean, docID: string) => {
-    setEngDocUploaded({ isUploaded: newState, docID: docID });
-  };
-  const handleSetChDocInfo = (newState: boolean, docID: string) => {
-    setChDocUploaded({ isUploaded: newState, docID: docID });
+  const handleUpgradePageStep = (newPage: number) => {
+    if (isLoading) return;
+    setCurrentStep(newPage);
   };
 
-  const handleUpdate = async () => {
+  const handleSetEngDocInfo = (newState: boolean, docID: string) => {
+    setDocUploaded({ isUploaded: newState, docID: docID });
+  };
+  const handleReview = async () => {
     setIsLoading(true);
-    const url = 'http://baba211ss.hopto.org:22384/project/update-translation';
+    const url = 'http://baba211ss.hopto.org:22384/project/review-one';
     const data = {
-      en_doc_id: engDocUploaded.docID,
-      zh_doc_id: chDocUploaded.docID,
+      single_doc_id: DocUploaded.docID,
     };
+    console.log(data);
     try {
       const response = await fetch(url, {
         method: 'POST',
@@ -59,13 +54,11 @@ const KFS2DocComponent: FunctionComponent<DocComponentProps> = ({
       });
 
       if (!response.ok) {
-        createNotification('danger', '', 'Updating failed');
         throw new Error(`HTTP error! Status: ${response.status}`);
       }
       const result = await response.json();
       console.log(result, result.document_id);
       setResDocID(result.document_id);
-      createNotification('success', '', 'Updating success');
       const downPdfURL = `http://baba211ss.hopto.org:22384/project/download/pdf/${result.document_id}`;
       fetch(downPdfURL, {
         method: 'GET',
@@ -76,18 +69,17 @@ const KFS2DocComponent: FunctionComponent<DocComponentProps> = ({
       })
         .then((response) => {
           if (!response.ok) {
-            createNotification('danger', '', 'Downloading failed');
             throw new Error(`HTTP error! Status: ${response.status}`);
           }
-          createNotification('success', '', 'Downloading success');
-          setCurrentStep(currentStep + 1);
+          setIsLoading(false);
+          handleUpgradePageStep(currentStep + 1);
+
           return response.blob();
         })
         .then((blob) => {
           const pdfUrl = URL.createObjectURL(blob);
           console.log(pdfUrl);
           setResultURL(pdfUrl);
-          setIsLoading(false);
         })
         .catch((error) => {
           console.error('Error fetching the PDF:', error);
@@ -119,9 +111,11 @@ const KFS2DocComponent: FunctionComponent<DocComponentProps> = ({
         isOpen,
       );
     } catch (error) {
+      createNotification('danger', '', 'Downloading Error');
       console.error('Error downloading the file: ', error);
     }
   };
+
   useEffect(() => {
     const unsubscribe = window.electron.ipcRenderer.on(
       'download-file-success',
@@ -136,56 +130,47 @@ const KFS2DocComponent: FunctionComponent<DocComponentProps> = ({
     );
     return unsubscribe;
   }, [yesPressed, setCurrentStep, setModalIsOpen]);
+
   const handlePrevBtnClick = async () => {
+    if (isLoading) return;
     setModalIsOpen(true);
   };
-
   const handleYes = async () => {
     await handleDownload(false);
     setYesPressed(true);
   };
-
   const handleNo = () => {
-    console.log('OK clicked');
+    if (isLoading) return;
     setCurrentStep(1);
     setModalIsOpen(false);
   };
 
   const handleClose = () => {
     setModalIsOpen(false);
+    // Additional logic for Close action
   };
   const stepOne = (
     <>
       <div className="rounded flex justify-between pr-4 text-sm h-5 items-center">
-        <div>Upload new English document and old Chinese document</div>
+        <div>Upload Single KFS document</div>
       </div>
       <div
         className="rounded flex justify-evenly w-full"
         style={{ height: 'calc(100% - 160px)' }}
       >
-        <div className="rounded w-1/2 pr-1">
-          <DocumentUploadComponent
-            isENG={true}
-            mode="English"
-            isUploaded={engDocUploaded.isUploaded}
-            setIsUploaded={handleSetEngDocInfo}
-          />
-        </div>
-        <div className="rounded w-1/2 pl-1">
-          <DocumentUploadComponent
-            isENG={false}
-            mode="Chinese"
-            isUploaded={chDocUploaded.isUploaded}
-            setIsUploaded={handleSetChDocInfo}
-          />
-        </div>
+        <DocumentUploadComponent
+          isENG={true}
+          mode="Single KFS"
+          isUploaded={DocUploaded.isUploaded}
+          setIsUploaded={handleSetEngDocInfo}
+        ></DocumentUploadComponent>
       </div>
       <div className="rounded w-full h-24 bg-[#1B1D2A] flex justify-end items-center pr-5">
         <ActiveButton
-          isEnabled={engDocUploaded.isUploaded && chDocUploaded.isUploaded}
+          isEnabled={DocUploaded.isUploaded}
           isLoading={isLoading}
-          text="Update"
-          onClick={handleUpdate}
+          text="Review"
+          onClick={handleReview}
         />
       </div>
     </>
@@ -203,7 +188,7 @@ const KFS2DocComponent: FunctionComponent<DocComponentProps> = ({
         <div>Result</div>
       </div>
       <div
-        className="rounded h-full flex space-x-4 justify-evenly"
+        className="rounded h-full flex space-x-4 justify-between"
         style={{ height: 'calc(100% - 32px)' }}
       >
         {isLoading ? (
@@ -226,23 +211,17 @@ const KFS2DocComponent: FunctionComponent<DocComponentProps> = ({
         )}
         <div className="rounded flex flex-col space-y-4 w-[20%]">
           <div className="rounded text-sm font-normal leading-normal text-stone-400 font-sans">
-            You have uploaded the following two documents for review. Please
+            You have uploaded the following one document for review. Please
             check the review results on the left column.
           </div>
           <div className="rounded w-full border border-slate-600 p-2 flex items-center text-stone-400 overflow-hidden justify-start space-x-2 bold flex-nowrap">
             <div>
               <FaFilePdf />
             </div>
-            <div className="rounded text-sm ">{engDocUploaded.docID}</div>
-          </div>
-          <div className="rounded w-full border border-slate-600 p-2 flex items-center text-stone-400 overflow-hidden justify-start space-x-2 bold flex-nowrap">
-            <div>
-              <FaFilePdf />
-            </div>
-            <div className="rounded text-sm ">{chDocUploaded.docID}</div>
+            <div className="rounded text-sm ">{DocUploaded.docID}</div>
           </div>
           <ActiveButton
-            isEnabled={engDocUploaded.isUploaded && chDocUploaded.isUploaded}
+            isEnabled={DocUploaded.isUploaded}
             isLoading={isLoading}
             text="Download as DOCX File"
             onClick={handleDownload}
@@ -252,20 +231,19 @@ const KFS2DocComponent: FunctionComponent<DocComponentProps> = ({
       </div>
     </>
   );
-
   return (
     <div className={`space-y-3 h-full px-2 ${currentStep === 1 && 'pt-3'}`}>
       {currentStep === 1 && (
         <>
           <div className="rounded text-2xl font-normal flex items-end ml-5">
-            Update Translation
+            {title}
           </div>
           <div className="rounded w-full border-t border-white-500" />
           {children}
         </>
       )}
       <div
-        className="rounded w-full h-full bg-[#262732] p-5 text-2xl	space-y-4"
+        className="rounded rounded w-full h-full bg-[#262732] p-5 text-2xl	space-y-4"
         style={{
           height: currentStep < 2 ? 'calc(100% - 107px)' : 'calc(100%)',
         }}
@@ -282,30 +260,3 @@ const KFS2DocComponent: FunctionComponent<DocComponentProps> = ({
     </div>
   );
 };
-
-export default function UpdatePage() {
-  const app = useContext(AppContext);
-  const appName = 'Update Translation';
-
-  const isShow = app?.currentPage === appName ? '' : 'hidden';
-  const mWidth = app?.showMenu ? '50vw' : '50vw - 256px';
-
-  const DocumentTypes = ['2 KFS Documents'];
-  const [docType, setDocType] = useState<string>(DocumentTypes[0]);
-  const handleDocTypeChange = (newDocType: string) => {
-    setDocType(newDocType);
-  };
-  return (
-    <div className={`${isShow} mt-1 h-full w-full`}>
-      {docType === DocumentTypes[0] && (
-        <KFS2DocComponent>
-          <DocumentTypeSelector
-            options={DocumentTypes}
-            changeDocType={handleDocTypeChange}
-            idx={0}
-          ></DocumentTypeSelector>
-        </KFS2DocComponent>
-      )}
-    </div>
-  );
-}

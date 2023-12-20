@@ -20,7 +20,7 @@ export const PdfPreviewer = ({ file }: { file: string }) => {
         ))}
       </PDFDocument>
       <PDFDocument
-                  className="pdf-container"
+                  className="rounded pdf-container"
                   renderMode="canvas"
                   onLoadSuccess={onDocumentLoadSuccess}
                   file={`data:application/pdf;base64,${file}`}

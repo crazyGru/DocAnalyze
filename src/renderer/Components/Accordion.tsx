@@ -6,19 +6,25 @@ import { FaWrench } from 'react-icons/fa';
 import { AppContext } from '../App';
 
 interface AccordionChildrenItemProps {
-  children: React.ReactNode,
-  title : string,
-  isSelected : boolean,
-  setPageName : (pageName : string) => void;
+  children: React.ReactNode;
+  title: string;
+  isSelected: boolean;
+  setPageName: (pageName: string) => void;
 }
 
-const AccordionChildrenItem: FunctionComponent<AccordionChildrenItemProps> = ({children, title, isSelected, setPageName}) => {
+const AccordionChildrenItem: FunctionComponent<AccordionChildrenItemProps> = ({
+  children,
+  title,
+  isSelected,
+  setPageName,
+}) => {
   const app = useContext(AppContext);
   // Define a base class string
-  const baseClass = "font-sans m-1 h-14 rounded-sm cursor-pointer flex text-[#E9E9E9] align-middle";
+  const baseClass =
+    'font-sans h-12 text-sm cursor-pointer flex text-[#E9E9E9] align-middle';
 
   // Conditionally add the background color class based on isSelected
-  const backgroundColorClass = isSelected ? "bg-[#404562]" : "bg-[#262732]";
+  const backgroundColorClass = isSelected ? 'bg-[#404562]' : 'bg-[#262732]';
 
   const handleClick = () => {
     setPageName(title);
@@ -26,9 +32,8 @@ const AccordionChildrenItem: FunctionComponent<AccordionChildrenItemProps> = ({c
   };
 
   return (
-    <div 
-      className={`${baseClass} ${backgroundColorClass}`}
-      style={{alignItems:"center", justifyContent:"space-evenly"}} 
+    <div
+      className={`${baseClass} ${backgroundColorClass} items-center justify-start pl-4 space-x-4`}
       onClick={handleClick}
     >
       {children}
@@ -36,38 +41,44 @@ const AccordionChildrenItem: FunctionComponent<AccordionChildrenItemProps> = ({c
   );
 };
 
-const Accordion: FunctionComponent = () => {
+interface AccordionProps {
+  isHover: boolean;
+};
+
+const Accordion: FunctionComponent<AccordionProps> = ({isHover}) => {
   const menuItemTitles = [
-    "Review Translation",
-    "Generate Translation",
-    "Update Translation"
-  ]
+    'Review Translation',
+    'Generate Translation',
+    'Update Translation',
+  ];
   const menuItems = [
     { title: menuItemTitles[0], icon: <FaThumbsUp /> },
     { title: menuItemTitles[1], icon: <FaDharmachakra /> },
     { title: menuItemTitles[2], icon: <FaWrench /> },
   ];
-  
+
   const [pageName, setPageName] = useState<string>(menuItemTitles[0]);
 
-  const handlePageChange = (newPage : string) => {setPageName(newPage);};
+  const handlePageChange = (newPage: string) => {
+    setPageName(newPage);
+  };
 
   return (
-    <div className="accordion">
-      <AccordionItem title="Funds">
-      {menuItems.map((item, index) => (
-      <AccordionChildrenItem
-        key={index}
-        title={item.title}
-        isSelected={item.title === pageName}
-        setPageName={handlePageChange}
-      >
-        {item.icon}
-        {item.title}
-      </AccordionChildrenItem>
-    ))}
+    <div className="rounded accordion">
+      <AccordionItem isHover={isHover} title="Funds">
+        {menuItems.map((item, index) => (
+          <AccordionChildrenItem
+            key={index}
+            title={item.title}
+            isSelected={item.title === pageName}
+            setPageName={handlePageChange}
+          >
+            <div>{item.icon}</div>
+            {isHover&&<div className='whitespace-nowrap'>{item.title}</div>}
+          </AccordionChildrenItem>
+        ))}
       </AccordionItem>
-      <AccordionItem title="Property">NotYet</AccordionItem>
+      <AccordionItem isHover={isHover} title="Property">{""}</AccordionItem>
     </div>
   );
 };
